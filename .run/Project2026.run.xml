@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Project2026" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DB_USER" value="shubham" />
+      <env name="DB_PASSWORD" value="patil" />
+      <env name="DB_URL" value="jdbc:mysql://localhost:3306/party_2026" />
+    </envs>
+    <module name="project-2026" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.party.Project2026Application" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

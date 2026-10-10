@@ -1,7 +1,7 @@
 package com.party.exception;
 
-import com.party.organization.dto.ErrorResponse;
-import com.party.organization.exception.DuplicateOrganisationUnitException;
+import com.party.common.dto.ErrorResponse;
+import com.party.organization.exception.DuplicateOrganizationUnitException;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
 import com.party.organization.exception.OrganizationUnitNotFoundException;
@@ -11,10 +11,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDateTime;
@@ -53,9 +56,9 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(DuplicateOrganisationUnitException.class)
+    @ExceptionHandler(DuplicateOrganizationUnitException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(
-            DuplicateOrganisationUnitException exception,
+            DuplicateOrganizationUnitException exception,
             HttpServletRequest request) {
 
         return buildResponse(
@@ -117,7 +120,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
-/*
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArguments(
             MethodArgumentNotValidException exception,
@@ -137,51 +140,34 @@ public class GlobalExceptionHandler {
         );
     }
 
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleMessageNotReadable(
-            HttpMessageNotReadableException exception,
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleMethodValidation(
+            HandlerMethodValidationException exception,
             HttpServletRequest request) {
 
-        String message = "Malformed or unreadable request body";
-
-        Throwable cause = exception.getCause();
-        if (cause instanceof InvalidFormatException ife && !ife.getPath().isEmpty()) {
-            String field = ife.getPath().stream()
-                    .map(ref -> ref.getPropertyName() != null
-                            ? ref.getPropertyName()
-                            : "[" + ref.getIndex() + "]")
-                    .collect(Collectors.joining("."));
-            message = "Invalid value for field '" + field + "'";
-        }
-
-        return buildResponse(
-                HttpStatus.BAD_REQUEST,
-                "MALFORMED_REQUEST",
-                message,
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                "Invalid request parameters", request.getRequestURI());
     }
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(
-            MethodArgumentTypeMismatchException exception,
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException exception,
             HttpServletRequest request) {
 
-        Class<?> requiredType = exception.getRequiredType();
-        String expected = requiredType != null ? requiredType.getSimpleName() : "valid type";
-
-        String message = "Parameter '" + exception.getName()
-                + "' must be of type " + expected;
-
-        return buildResponse(
-                HttpStatus.BAD_REQUEST,
-                "TYPE_MISMATCH",
-                message,
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+                exception.getMessage(), request.getRequestURI());
     }
-*/
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            NoResourceFoundException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(HttpStatus.NOT_FOUND, "NOT_FOUND",
+                "Resource not found", request.getRequestURI());
+    }
+
+
 
 
     private ResponseEntity<ErrorResponse> buildResponse(

@@ -1,4 +1,4 @@
-package com.party.organization.dto;
+package com.party.common.dto;
 
 import lombok.Builder;
 import lombok.Data;

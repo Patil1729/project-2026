@@ -24,5 +24,5 @@ public interface OrganizationService {
 
     void delete(Long id);
 
-    void active(Long id);
+    OrganizationUnitResponse activate(Long id);
 }
