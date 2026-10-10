@@ -1,4 +1,4 @@
-package com.party.organization;
+package com.party.common.config;
 
 import com.party.organization.entity.OrganizationType;
 import com.party.organization.entity.OrganizationUnit;
