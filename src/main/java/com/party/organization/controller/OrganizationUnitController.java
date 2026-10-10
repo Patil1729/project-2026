@@ -76,12 +76,10 @@ public class OrganizationUnitController {
     }
 
     @PatchMapping ("/{id}/activate")
-    public ResponseEntity<String> active(
+    public ResponseEntity<OrganizationUnitResponse> active(
             @PathVariable Long id) {
 
-        organizationUnitService.active(id);
-
-        return ResponseEntity.ok("Activation successful");
+        return ResponseEntity.ok(organizationUnitService.activate(id));
     }
 
     @GetMapping("/roots")

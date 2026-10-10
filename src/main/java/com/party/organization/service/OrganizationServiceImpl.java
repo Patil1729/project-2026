@@ -4,11 +4,12 @@ import com.party.organization.dto.OrganizationUnitRequest;
 import com.party.organization.dto.OrganizationUnitResponse;
 import com.party.organization.entity.OrganizationType;
 import com.party.organization.entity.OrganizationUnit;
-import com.party.organization.exception.DuplicateOrganisationUnitException;
+import com.party.organization.exception.DuplicateOrganizationUnitException;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
 import com.party.organization.exception.OrganizationUnitNotFoundException;
 import com.party.organization.repository.OrganizationUnitRepository;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,23 +19,25 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class OrganizationServiceImpl implements OrganizationService {
 
-    @Autowired
-    ModelMapper modelMapper;
+//    @Autowired
+//    ModelMapper modelMapper;
 
+    private final ModelMapper modelMapper;
     private final OrganizationUnitRepository organizationUnitRepository;
 
-    public OrganizationServiceImpl(OrganizationUnitRepository organizationUnitRepository) {
-        this.organizationUnitRepository = organizationUnitRepository;
-    }
+//    public OrganizationServiceImpl(OrganizationUnitRepository organizationUnitRepository) {
+//        this.organizationUnitRepository = organizationUnitRepository;
+//    }
 
     @Override
     public OrganizationUnitResponse create(OrganizationUnitRequest request) {
 
         // 1. duplicate code -> 409
         if (organizationUnitRepository.existsByCode(request.getCode())) {
-            throw new DuplicateOrganisationUnitException(
+            throw new DuplicateOrganizationUnitException(
                     "Organization with code " + request.getCode() + " already exists");
         }
 
@@ -147,7 +150,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                         "Organization unit with id " + id + " not found"));                // 404
 
         if (organizationUnitRepository.existsByCodeAndIdNot(request.getCode(), id)) {
-            throw new DuplicateOrganisationUnitException(
+            throw new DuplicateOrganizationUnitException(
                     "Code already exists: " + request.getCode());                          // 409
         }
 
@@ -218,7 +221,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Transactional
     @Override
-    public void active(Long id) {
+    public OrganizationUnitResponse activate(Long id) {
         OrganizationUnit unit = organizationUnitRepository.findById(id)
                 .orElseThrow(() -> new OrganizationUnitNotFoundException(
                         "Organization unit with id " + id + " not found"));
@@ -248,6 +251,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         // Activate only the requested organization.
         unit.setActive(true);
+
+        return mapToResponse(current);
     }
 
     private OrganizationUnitResponse mapToResponse(OrganizationUnit unit) {
