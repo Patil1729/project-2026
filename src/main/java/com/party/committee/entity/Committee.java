@@ -42,27 +42,28 @@ public class Committee extends AuditableEntity {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private CommitteeType type;
+    private CommitteeType committeeType;
 
     @NotNull
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "organization_unit_id", nullable = false, unique = true,
+    @JoinColumn(name = "organization_unit_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_committee_organization_unit"))
     private OrganizationUnit organizationUnit;
 
     @Column(nullable = false)
     @Builder.Default
-    private boolean active = true;
+    private Boolean active = true;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "committee", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "committee", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,orphanRemoval = true)
     @Builder.Default
     private List<CommitteePosition> positions = new ArrayList<>();
 
     @JsonIgnore
     @AssertTrue(message = "Committee type must match its organization unit")
     public boolean isOrganizationTypeValid() {
-        return type == null || organizationUnit == null
-                || type.getOrganizationType() == organizationUnit.getType();
+        return committeeType == null || organizationUnit == null
+                || committeeType.getOrganizationType() == organizationUnit.getType();
     }
 }
