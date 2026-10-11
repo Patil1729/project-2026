@@ -1,7 +1,10 @@
 package com.party.organization.exception;
 
-public class DuplicateOrganizationUnitException extends RuntimeException {
+import com.party.exception.DuplicateResourceException;
+
+public class DuplicateOrganizationUnitException extends DuplicateResourceException {
     public DuplicateOrganizationUnitException(String message) {
-        super(message);
+
+        super("DUPLICATE_ORGANIZATION_UNIT",message);
     }
 }
