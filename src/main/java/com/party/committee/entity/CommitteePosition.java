@@ -67,21 +67,21 @@ public class CommitteePosition extends AuditableEntity {
     @JsonIgnore
     @AssertTrue(message = "Position type and number must belong to the committee template")
     public boolean isTemplateValid() {
-        if (committee == null || committee.getType() == null
+        if (committee == null || committee.getCommitteeType() == null
                 || positionType == null || positionNumber == null) {
             return true;
         }
-        Integer count = committee.getType().getPositionTemplate().get(positionType);
+        Integer count = committee.getCommitteeType().getPositionTemplate().get(positionType);
         return count != null && positionNumber >= 1 && positionNumber <= count;
     }
 
     @JsonIgnore
     @AssertTrue(message = "Only a state vice president has a responsibility division, belonging to that state")
     public boolean isResponsibilityValid() {
-        if (committee == null || committee.getType() == null || positionType == null) {
+        if (committee == null || committee.getCommitteeType() == null || positionType == null) {
             return true;
         }
-        boolean stateVicePresident = committee.getType() == CommitteeType.STATE_COMMITTEE
+        boolean stateVicePresident = committee.getCommitteeType() == CommitteeType.STATE_COMMITTEE
                 && positionType == CommitteePositionType.VICE_PRESIDENT;
         if (!stateVicePresident) {
             return responsibilityUnit == null;

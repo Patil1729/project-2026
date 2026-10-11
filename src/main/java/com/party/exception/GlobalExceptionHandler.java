@@ -1,13 +1,15 @@
 package com.party.exception;
 
 import com.party.common.dto.ErrorResponse;
-import com.party.organization.exception.DuplicateOrganizationUnitException;
+
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
 import com.party.organization.exception.OrganizationUnitNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -43,6 +45,19 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "DATA_CONFLICT",
+                "Resource already exists or violates a constraint",
+                request.getRequestURI()
+        );
+    }
+
     @ExceptionHandler(OrganizationUnitNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
             OrganizationUnitNotFoundException exception,
@@ -56,14 +71,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(DuplicateOrganizationUnitException.class)
+    @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(
-            DuplicateOrganizationUnitException exception,
+            DuplicateResourceException exception,
             HttpServletRequest request) {
 
         return buildResponse(
                 HttpStatus.CONFLICT,
-                "DUPLICATE_ORGANIZATION_UNIT",
+                exception.getErrorCode(),
                 exception.getMessage(),
                 request.getRequestURI()
         );
@@ -168,6 +183,23 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException exception,
+            HttpServletRequest request) {
+
+        String message = exception.getConstraintViolations()
+                .stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "CONSTRAINT_VIOLATION",
+                message,
+                request.getRequestURI()
+        );
+    }
 
 
     private ResponseEntity<ErrorResponse> buildResponse(
