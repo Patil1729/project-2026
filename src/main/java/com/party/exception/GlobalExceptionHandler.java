@@ -1,5 +1,6 @@
 package com.party.exception;
 
+import com.party.committee.exception.CommitteeInUseException;
 import com.party.common.dto.ErrorResponse;
 
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
@@ -58,14 +59,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(OrganizationUnitNotFoundException.class)
+    @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
-            OrganizationUnitNotFoundException exception,
+            ResourceNotFoundException exception,
             HttpServletRequest request) {
 
         return buildResponse(
                 HttpStatus.NOT_FOUND,
-                "ORGANIZATION_UNIT_NOT_FOUND",
+                exception.getErrorCode(),
                 exception.getMessage(),
                 request.getRequestURI()
         );
@@ -197,6 +198,18 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "CONSTRAINT_VIOLATION",
                 message,
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(CommitteeInUseException.class)
+    public ResponseEntity<ErrorResponse> handleInUse(
+            CommitteeInUseException exception, HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "COMMITTEE_IN_USE",
+                exception.getMessage(),
                 request.getRequestURI()
         );
     }

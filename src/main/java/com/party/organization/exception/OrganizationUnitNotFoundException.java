@@ -1,9 +1,12 @@
 package com.party.organization.exception;
 
 
-public class OrganizationUnitNotFoundException extends RuntimeException {
+import com.party.exception.ResourceNotFoundException;
+
+public class OrganizationUnitNotFoundException extends ResourceNotFoundException {
+
 
     public OrganizationUnitNotFoundException(String message) {
-        super(message);
+        super("ORGANIZATION_UNIT_NOT_FOUND",message);
     }
 }

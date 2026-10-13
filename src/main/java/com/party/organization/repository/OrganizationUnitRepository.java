@@ -38,4 +38,6 @@ public interface OrganizationUnitRepository extends JpaRepository<OrganizationUn
     List<OrganizationUnit> findByParentIdAndActiveTrue(Long parentId);
 
     List<OrganizationUnit> findByParentIsNullAndActiveTrue();
+
+    List<OrganizationUnit> findByParent_IdAndTypeAndActiveTrueOrderByIdAsc(Long id, OrganizationType organizationType);
 }
