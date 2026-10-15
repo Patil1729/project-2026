@@ -130,7 +130,7 @@ public class CommitteeServiceImpl implements CommitteeService {
             }
         }
 
-        committee.setPositions(positions);
+        committee.getPositions().addAll(positions);
         committeePositionRepository.saveAllAndFlush(positions);
     }
 
