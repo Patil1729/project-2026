@@ -1,7 +1,9 @@
 package com.party.committee.exception;
 
-public class CommitteeInUseException extends RuntimeException {
+import com.party.exception.ResourceInUseException;
+
+public class CommitteeInUseException extends ResourceInUseException {
     public CommitteeInUseException(String message) {
-        super(message);
+        super("COMMITTEE_IN_USE",message);
     }
 }
