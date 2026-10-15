@@ -1,6 +1,7 @@
 package com.party.exception;
 
 import com.party.committee.exception.CommitteeInUseException;
+import com.party.committee.exception.InvalidCommitteePositionException;
 import com.party.common.dto.ErrorResponse;
 
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
@@ -202,13 +203,26 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(CommitteeInUseException.class)
+    @ExceptionHandler(ResourceInUseException.class)
     public ResponseEntity<ErrorResponse> handleInUse(
-            CommitteeInUseException exception, HttpServletRequest request) {
+            ResourceInUseException exception, HttpServletRequest request) {
 
         return buildResponse(
                 HttpStatus.CONFLICT,
-                "COMMITTEE_IN_USE",
+                exception.getErrorCode(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(InvalidCommitteePositionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidHierarchy(
+            InvalidCommitteePositionException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "INVALID_COMMITTEE_POSITION",
                 exception.getMessage(),
                 request.getRequestURI()
         );
