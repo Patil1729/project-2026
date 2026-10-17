@@ -27,4 +27,6 @@ public interface RegistrationApplicationRepository extends JpaRepository<Registr
     long countPendingApplicationsForOrganizationUnit(
             @Param("unitId") Long unitId,
             @Param("statuses") Collection<RegistrationStatus> statuses);
+
+    boolean existsByApplicant_IdAndStatusIn(Long userId, Collection<RegistrationStatus> statuses);
 }
