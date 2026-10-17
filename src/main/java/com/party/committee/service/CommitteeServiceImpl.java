@@ -50,7 +50,7 @@ public class CommitteeServiceImpl implements CommitteeService {
 
 
         //2. OrganizationUnit existOrNot
-        OrganizationUnit organizationUnit = organizationUnitRepository.findById(request.getOrganizationUnitId())
+        OrganizationUnit organizationUnit = organizationUnitRepository.findByIdForUpdate(request.getOrganizationUnitId())
                 .orElseThrow(() -> new OrganizationUnitNotFoundException(
                         "Organization unit with id " + request.getOrganizationUnitId() + " not found"));
 
@@ -135,7 +135,8 @@ public class CommitteeServiceImpl implements CommitteeService {
     }
 
     private List<OrganizationUnit> findStateResponsibilityDivisions(
-            CommitteeType type, OrganizationUnit unit) {
+            CommitteeType type,
+            OrganizationUnit unit) {
 
         if (type != CommitteeType.STATE_COMMITTEE) {
             return List.of();
@@ -144,14 +145,19 @@ public class CommitteeServiceImpl implements CommitteeService {
         int requiredDivisions = type.getPositionTemplate()
                 .get(CommitteePositionType.VICE_PRESIDENT);
 
+        // Read and lock the currently active divisions.
         List<OrganizationUnit> divisions = organizationUnitRepository
-                .findByParent_IdAndTypeAndActiveTrueOrderByIdAsc(
-                        unit.getId(), OrganizationType.DIVISION);
+                .findActiveDivisionsForUpdate(
+                        unit.getId(),
+                        OrganizationType.DIVISION);
 
+        // Validate the count after acquiring the locks.
         if (divisions.size() != requiredDivisions) {
             throw new InvalidOrganizationHierarchyException(
-                    "A state committee requires exactly " + requiredDivisions
-                            + " active divisions under its state for vice-president seats; found "
+                    "A state committee requires exactly "
+                            + requiredDivisions
+                            + " active divisions under its state "
+                            + "for vice-president seats; found "
                             + divisions.size());
         }
 
@@ -286,7 +292,11 @@ public class CommitteeServiceImpl implements CommitteeService {
                 .orElseThrow(() -> new CommitteeNotFoundException(
                         "Committee with id " + id + " not found"));
 
-        OrganizationUnit unit = committee.getOrganizationUnit();
+        OrganizationUnit unit = organizationUnitRepository.findByIdForUpdate(
+                        committee.getOrganizationUnit().getId())
+                .orElseThrow(() -> new OrganizationUnitNotFoundException("Organization unit not found"));
+
+
 
         validateCommitteeType(committee.getCommitteeType(), unit);
         validateActiveOrganizationHierarchy(unit);

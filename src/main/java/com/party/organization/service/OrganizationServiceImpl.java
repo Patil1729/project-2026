@@ -1,5 +1,8 @@
 package com.party.organization.service;
 
+import com.party.committee.repository.AdvocateAssignmentRepository;
+import com.party.committee.repository.CommitteePositionRepository;
+import com.party.committee.repository.CommitteeRepository;
 import com.party.organization.dto.OrganizationUnitRequest;
 import com.party.organization.dto.OrganizationUnitResponse;
 import com.party.organization.entity.OrganizationType;
@@ -8,29 +11,36 @@ import com.party.organization.exception.DuplicateOrganizationUnitException;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
 import com.party.organization.exception.OrganizationUnitNotFoundException;
+import com.party.organization.exception.OrganizationUnitInUseException;
+import com.party.registration.entity.RegistrationStatus;
+import com.party.registration.repository.RegistrationApplicationRepository;
 import com.party.organization.repository.OrganizationUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
-@Transactional
+@Transactional(isolation = Isolation.READ_COMMITTED)
 @RequiredArgsConstructor
 public class OrganizationServiceImpl implements OrganizationService {
 
-//    @Autowired
-//    ModelMapper modelMapper;
-
     private final ModelMapper modelMapper;
     private final OrganizationUnitRepository organizationUnitRepository;
+    private final CommitteeRepository committeeRepository;
+    private final CommitteePositionRepository committeePositionRepository;
+    private final AdvocateAssignmentRepository advocateAssignmentRepository;
+    private final RegistrationApplicationRepository registrationApplicationRepository;
 
-//    public OrganizationServiceImpl(OrganizationUnitRepository organizationUnitRepository) {
-//        this.organizationUnitRepository = organizationUnitRepository;
-//    }
+    private static final List<RegistrationStatus> PENDING_STATUSES = List.of(
+            RegistrationStatus.AWAITING_RECOMMENDATION,
+            RegistrationStatus.UNDER_REVIEW);
 
     @Override
     public OrganizationUnitResponse create(OrganizationUnitRequest request) {
@@ -55,7 +65,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         // 4. parent validation
         OrganizationUnit parent = null;
         if (request.getParentId() != null) {
-            parent = organizationUnitRepository.findById(request.getParentId())
+            parent = organizationUnitRepository.findByIdForUpdate(request.getParentId())
                     .orElseThrow(() -> new OrganizationUnitNotFoundException(
                             "Parent organization with id " + request.getParentId() + " not found"));   // 404
 
@@ -73,7 +83,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         organizationUnit.setParent(parent);
 
         // 6. save
-        OrganizationUnit saved = organizationUnitRepository.save(organizationUnit);
+        OrganizationUnit saved = organizationUnitRepository.saveAndFlush(organizationUnit);
 
         return mapToResponse(saved);
     }
@@ -145,7 +155,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public OrganizationUnitResponse update(Long id, OrganizationUnitRequest request) {
 
-        OrganizationUnit unit = organizationUnitRepository.findById(id)
+        OrganizationUnit unit = organizationUnitRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new OrganizationUnitNotFoundException(
                         "Organization unit with id " + id + " not found"));                // 404
 
@@ -165,17 +175,23 @@ public class OrganizationServiceImpl implements OrganizationService {
             throw new InvalidOrganizationHierarchyException(type + " must have a parent");
         }
 
-        // don't let a type change break existing children -> 409
-//        if (type != unit.getType() && organizationUnitRepository.existsByParentIdAndActiveTrue(id)) {
-//            throw new OrganizationUnitHasChildrenException(
-//                    "Cannot change type of a unit that has child units");
-//        }
-
-        if (type != unit.getType()
-                && organizationUnitRepository.existsByParentId(id)) {
-
-            throw new OrganizationUnitHasChildrenException(
-                    "Cannot change type: active or inactive child units exist");
+        Long previousParentId = unit.getParent() == null ? null : unit.getParent().getId();
+        boolean structureChanged = type != unit.getType() || !Objects.equals(parentId, previousParentId);
+        if (structureChanged) {
+            if (organizationUnitRepository.existsByParentId(id)) {
+                throw new OrganizationUnitHasChildrenException(
+                        "Cannot change type or parent: active or inactive child units exist");
+            }
+            // Preserve committee templates and historical responsibility mappings.
+            if (committeeRepository.existsByOrganizationUnitId(id)) {
+                throw new OrganizationUnitInUseException(
+                        "Cannot change type or parent: a committee references this organization. "
+                                + "Name and code can still be updated.");
+            }
+            if (committeePositionRepository.existsByResponsibilityUnit_Id(id)) {
+                throw new OrganizationUnitInUseException(
+                        "Cannot change type or parent: committee positions reference this responsibility unit");
+            }
         }
 
         OrganizationUnit parent = null;
@@ -183,7 +199,7 @@ public class OrganizationServiceImpl implements OrganizationService {
             if (id.equals(parentId)) {
                 throw new InvalidOrganizationHierarchyException("Unit cannot be its own parent");   // 400
             }
-            parent = organizationUnitRepository.findById(parentId)
+            parent = organizationUnitRepository.findByIdForUpdate(parentId)
                     .orElseThrow(() -> new OrganizationUnitNotFoundException(
                             "Parent organization with id " + parentId + " not found"));
 
@@ -201,58 +217,72 @@ public class OrganizationServiceImpl implements OrganizationService {
         unit.setType(type);
         unit.setParent(parent);
 
-        return mapToResponse(unit);   // dirty checking saves it at commit
+        return mapToResponse(organizationUnitRepository.saveAndFlush(unit));
     }
 
     @Override
     public void delete(Long id) {
-        OrganizationUnit unit = organizationUnitRepository.findById(id)
-                .orElseThrow(() -> new OrganizationUnitNotFoundException(
-                        "Organization unit with id " + id + " not found"));                // 404
-
+        OrganizationUnit unit = findForUpdate(id);
+        if (!Boolean.TRUE.equals(unit.getActive())) {
+            return;
+        }
         if (organizationUnitRepository.existsByParentIdAndActiveTrue(id)) {
             throw new OrganizationUnitHasChildrenException(
-                    "Cannot delete: active child units exist");                            // 409
+                    "Cannot deactivate: active child units exist");
         }
-        unit.setActive(false);   // soft delete
+        if (advocateAssignmentRepository.countActiveAssignmentsForOrganizationUnit(id) > 0) {
+            throw new OrganizationUnitInUseException(
+                    "Cannot deactivate: active advocate appointments depend on this organization. "
+                            + "End those appointments first.");
+        }
+        if (registrationApplicationRepository.countPendingApplicationsForOrganizationUnit(
+                id, PENDING_STATUSES) > 0) {
+            throw new OrganizationUnitInUseException(
+                    "Cannot deactivate: pending registration applications depend on this organization. "
+                            + "Resolve those applications first.");
+        }
+        if (committeeRepository.existsByOrganizationUnit_IdAndActiveTrue(id)) {
+            throw new OrganizationUnitInUseException(
+                    "Cannot deactivate: an active committee exists. Deactivate the committee first.");
+        }
+        if (committeePositionRepository.existsByResponsibilityUnit_IdAndActiveTrue(id)) {
+            throw new OrganizationUnitInUseException(
+                    "Cannot deactivate: active committee positions use this responsibility unit. "
+                            + "Deactivate those positions first.");
+        }
+        unit.setActive(false);
     }
 
-
-
-    @Transactional
     @Override
     public OrganizationUnitResponse activate(Long id) {
-        OrganizationUnit unit = organizationUnitRepository.findById(id)
-                .orElseThrow(() -> new OrganizationUnitNotFoundException(
-                        "Organization unit with id " + id + " not found"));
-
+        OrganizationUnit unit = findForUpdate(id);
         OrganizationUnit current = unit;
-
+        Set<Long> visited = new HashSet<>();
         while (current != null) {
+            if (!visited.add(current.getId())) {
+                throw new InvalidOrganizationHierarchyException("Organization hierarchy contains a cycle");
+            }
             OrganizationUnit parent = current.getParent();
-
-            OrganizationType parentType =
-                    parent == null ? null : parent.getType();
-
-            // 1. Validate parent presence and parent-child types.
-            validateParentChild(parentType, current.getType());
-
-            // 2. Validate that the parent is active.
+            if (parent != null) {
+                parent = findForUpdate(parent.getId());
+            }
+            validateParentChild(parent == null ? null : parent.getType(), current.getType());
             if (parent != null && !Boolean.TRUE.equals(parent.getActive())) {
                 throw new InvalidOrganizationHierarchyException(
-                        "Cannot activate: parent organization with id "
-                                + parent.getId()
+                        "Cannot activate: parent organization with id " + parent.getId()
                                 + " is inactive. Activate it first.");
             }
-
-            // Continue checking the higher ancestors.
             current = parent;
         }
-
-        // Activate only the requested organization.
         unit.setActive(true);
+        // Return the requested unit; current is null after the ancestor loop.
+        return mapToResponse(organizationUnitRepository.saveAndFlush(unit));
+    }
 
-        return mapToResponse(current);
+    private OrganizationUnit findForUpdate(Long id) {
+        return organizationUnitRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new OrganizationUnitNotFoundException(
+                        "Organization unit with id " + id + " not found"));
     }
 
     private OrganizationUnitResponse mapToResponse(OrganizationUnit unit) {

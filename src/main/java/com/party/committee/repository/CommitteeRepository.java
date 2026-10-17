@@ -1,10 +1,7 @@
 package com.party.committee.repository;
 
-import aj.org.objectweb.asm.commons.Remapper;
 import com.party.committee.entity.Committee;
 import jakarta.persistence.LockModeType;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,6 +19,8 @@ public interface CommitteeRepository extends JpaRepository<Committee, Long> {
     boolean existsByCode( String code);
 
     boolean existsByOrganizationUnitId(Long id);
+
+    boolean existsByOrganizationUnit_IdAndActiveTrue(Long organizationUnitId);
 
     @EntityGraph(attributePaths = "organizationUnit")
     Optional<Committee> findByOrganizationUnitId(Long organizationUnitId);

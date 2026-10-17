@@ -3,8 +3,10 @@ package com.party.organization.repository;
 
 import com.party.organization.entity.OrganizationType;
 import com.party.organization.entity.OrganizationUnit;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
@@ -40,4 +42,28 @@ public interface OrganizationUnitRepository extends JpaRepository<OrganizationUn
     List<OrganizationUnit> findByParentIsNullAndActiveTrue();
 
     List<OrganizationUnit> findByParent_IdAndTypeAndActiveTrueOrderByIdAsc(Long id, OrganizationType organizationType);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from OrganizationUnit u where u.id = :id")
+    Optional<OrganizationUnit> findByIdForUpdate(@Param("id") Long id);
+
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(
+            @QueryHint(
+                    name = "jakarta.persistence.lock.timeout",
+                    value = "0"
+            )
+    )
+    @Query("""
+        select u
+        from OrganizationUnit u
+        where u.parent.id = :stateId
+          and u.type = :divisionType
+          and u.active = true
+        order by u.id
+        """)
+    List<OrganizationUnit> findActiveDivisionsForUpdate(
+            @Param("stateId") Long stateId,
+            @Param("divisionType") OrganizationType divisionType);
 }
