@@ -8,9 +8,11 @@ import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-public class OrgConfig {
+public class AppConfiguration {
 
     @Bean
     public ModelMapper modelMapper(){
@@ -28,36 +30,10 @@ public class OrgConfig {
         return modelMapper;
     }
 
-    //@Bean
-    CommandLineRunner seedOrganizations(
-            OrganizationUnitRepository repository) {
-
-        return args -> {
-
-            OrganizationUnit party = new OrganizationUnit();
-            party.setName("My Party");
-            party.setType(OrganizationType.PARTY);
-            repository.save(party);
-
-            OrganizationUnit maharashtra =
-                    new OrganizationUnit();
-
-            maharashtra.setName("Maharashtra");
-            maharashtra.setType(
-                    OrganizationType.STATE);
-            maharashtra.setParent(party);
-
-            repository.save(maharashtra);
-
-            OrganizationUnit pune =
-                    new OrganizationUnit();
-
-            pune.setName("Pune");
-            pune.setType(
-                    OrganizationType.DISTRICT);
-            pune.setParent(maharashtra);
-
-            repository.save(pune);
-        };
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
+
+
 }

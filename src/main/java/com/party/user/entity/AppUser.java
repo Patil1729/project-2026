@@ -48,6 +48,11 @@ public class AppUser extends AuditableEntity {
     private String password;
 
     @NotBlank
+    @Size(max = 150)
+    @Column(name = "full_name", nullable = false, length = 150)
+    private String fullName;
+
+    @NotBlank
     @Size(max = 16)
     @Pattern(regexp = "^\\+?[1-9][0-9]{7,14}$", message = "Use a normalized mobile number")
     @Column(nullable = false, length = 16)
@@ -58,10 +63,12 @@ public class AppUser extends AuditableEntity {
     @Column(length = 255)
     private String email;
 
-    @NotBlank
-    @Size(max = 150)
-    @Column(name = "full_name", nullable = false, length = 150)
-    private String fullName;
+    // Optional home/shakha. It does not grant authority over this unit.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_unit_id",
+            foreignKey = @ForeignKey(name = "fk_user_home_unit"))
+    private OrganizationUnit organizationUnit;
+
 
     // Authentication availability, NOT application approval.
     // Registration explicitly sets true with only APPLICANT permission.
@@ -73,11 +80,7 @@ public class AppUser extends AuditableEntity {
     @Builder.Default
     private boolean passwordChangeRequired = true;
 
-    // Optional home/shakha. It does not grant authority over this unit.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_unit_id",
-            foreignKey = @ForeignKey(name = "fk_user_home_unit"))
-    private OrganizationUnit organizationUnit;
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
