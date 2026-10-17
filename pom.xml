@@ -49,6 +49,13 @@
         <!--                <artifactId>spring-boot-starter-security</artifactId>-->
         <!--            </dependency>-->
 
+        <!-- Password Encoder -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
+
         <!-- Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

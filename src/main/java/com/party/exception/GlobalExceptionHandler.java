@@ -4,6 +4,7 @@ import com.party.committee.exception.InvalidCommitteePositionException;
 import com.party.common.dto.ErrorResponse;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
+import com.party.user.exception.InvalidUserRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -261,6 +262,13 @@ public class GlobalExceptionHandler {
                 .status(response.getStatusCode())
                 .headers(exception.getHeaders())
                 .body(response.getBody());
+    }
+
+    @ExceptionHandler(InvalidUserRequestException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidUserRequest(
+            InvalidUserRequestException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_USER_REQUEST",
+                ex.getMessage(), request.getRequestURI());
     }
 
 

@@ -19,4 +19,6 @@ public interface AdvocateAssignmentRepository extends JpaRepository<AdvocateAssi
               and (p.committee.organizationUnit.id = :unitId or r.id = :unitId)
             """)
     long countActiveAssignmentsForOrganizationUnit(@Param("unitId") Long unitId);
+
+    boolean existsByAdvocate_IdAndActiveTrue(Long userId);
 }
