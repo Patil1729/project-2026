@@ -1,20 +1,20 @@
 package com.party.exception;
 
-import com.party.committee.exception.CommitteeInUseException;
 import com.party.committee.exception.InvalidCommitteePositionException;
 import com.party.common.dto.ErrorResponse;
-
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
-import com.party.organization.exception.OrganizationUnitNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -45,6 +44,13 @@ public class GlobalExceptionHandler {
                 "Something went wrong. Please try again later.",
                 request.getRequestURI()
         );
+    }
+
+    @ExceptionHandler({OptimisticLockingFailureException.class, PessimisticLockingFailureException.class})
+    public ResponseEntity<ErrorResponse> handleConcurrentChange(
+            RuntimeException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, "CONCURRENT_CHANGE",
+                "The resource changed or is being modified. Reload and retry.", request.getRequestURI());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -227,6 +233,36 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
     }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(
+            HttpMediaTypeNotSupportedException exception,
+            HttpServletRequest request) {
+
+        String supportedTypes = exception.getSupportedMediaTypes()
+                .stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+
+        String message = "Unsupported request Content-Type.";
+
+        if (!supportedTypes.isBlank()) {
+            message += " Supported types: " + supportedTypes;
+        }
+
+        ResponseEntity<ErrorResponse> response = buildResponse(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "UNSUPPORTED_MEDIA_TYPE",
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(response.getStatusCode())
+                .headers(exception.getHeaders())
+                .body(response.getBody());
+    }
+
 
 
     private ResponseEntity<ErrorResponse> buildResponse(

@@ -11,6 +11,8 @@ import com.party.committee.repository.CommitteePositionRepository;
 import com.party.committee.repository.CommitteeRepository;
 import com.party.organization.entity.OrganizationType;
 import com.party.organization.entity.OrganizationUnit;
+import com.party.organization.exception.OrganizationUnitNotFoundException;
+import com.party.organization.repository.OrganizationUnitRepository;
 import com.party.registration.entity.RegistrationStatus;
 import com.party.user.entity.AppUser;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class CommitteePositionServiceImpl implements CommitteePositionService {
 
     private final CommitteePositionRepository committeePositionRepository;
     private final CommitteeRepository committeeRepository;
+    private final OrganizationUnitRepository organizationUnitRepository;
 
     private static final List<RegistrationStatus> PENDING_STATUSES = List.of(
             RegistrationStatus.AWAITING_RECOMMENDATION,
@@ -37,9 +40,6 @@ public class CommitteePositionServiceImpl implements CommitteePositionService {
     public List<CommitteePositionResponse> getPositionsByCommitteeId(Long committeeId) {
         validateId(committeeId, "Committee id");
         //1. check Exist or not
-        committeeRepository.findById(committeeId)
-                .orElseThrow(() -> new CommitteeNotFoundException("Committee not found with id: " + committeeId));
-
         committeeRepository.findById(committeeId)
                 .orElseThrow(() -> new CommitteeNotFoundException(
                         "Committee with id " + committeeId + " not found"));
@@ -118,14 +118,23 @@ public class CommitteePositionServiceImpl implements CommitteePositionService {
         Long committeeId = committeePositionRepository.findCommitteeIdByPositionId(id)
                 .orElseThrow(() -> new CommitteePositionNotFoundException("Committee position not found with id: " + id));
 
-        // All appointment/application write paths must use this same lock order.
-        // This coordinates with CommitteeService's existing findByIdForUpdate().
-        committeeRepository.findByIdForUpdate(committeeId)
+        // Existing-committee writes lock committee -> organization(s) -> position.
+        Committee committee = committeeRepository.findByIdForUpdate(committeeId)
                 .orElseThrow(() -> new CommitteeNotFoundException(
                         "Committee with id " + committeeId + " not found"));
 
+        lockOrganization(committee.getOrganizationUnit().getId());
+        committeePositionRepository.findResponsibilityUnitIdByPositionId(id)
+                .ifPresent(this::lockOrganization);
+
         return committeePositionRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new CommitteePositionNotFoundException("Committee position not found with id: " + id));
+    }
+
+    private void lockOrganization(Long id) {
+        organizationUnitRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new OrganizationUnitNotFoundException(
+                        "Organization unit with id " + id + " not found"));
     }
 
     private List<CommitteePositionResponse> toResponses(List<CommitteePosition> positions) {
