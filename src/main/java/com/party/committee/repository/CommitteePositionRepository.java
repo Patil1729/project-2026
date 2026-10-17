@@ -18,6 +18,10 @@ import java.util.Optional;
 @Repository
 public interface CommitteePositionRepository extends JpaRepository<CommitteePosition, Long> {
 
+    boolean existsByResponsibilityUnit_Id(Long organizationUnitId);
+
+    boolean existsByResponsibilityUnit_IdAndActiveTrue(Long organizationUnitId);
+
     @EntityGraph(attributePaths = {
             "committee", "committee.organizationUnit", "responsibilityUnit"
     })
@@ -38,6 +42,9 @@ public interface CommitteePositionRepository extends JpaRepository<CommitteePosi
     // A scalar lookup avoids loading an unlocked position into the persistence context.
     @Query("select p.committee.id from CommitteePosition p where p.id = :id")
     Optional<Long> findCommitteeIdByPositionId(@Param("id") Long id);
+
+    @Query("select r.id from CommitteePosition p left join p.responsibilityUnit r where p.id = :id")
+    Optional<Long> findResponsibilityUnitIdByPositionId(@Param("id") Long id);
 
     // Lock the committee first in the service, then this position.
     @Lock(LockModeType.PESSIMISTIC_WRITE)

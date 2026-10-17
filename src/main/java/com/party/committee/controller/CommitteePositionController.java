@@ -22,7 +22,7 @@ public class CommitteePositionController {
             return ResponseEntity.ok(positionService.getPositionsByCommitteeId(committeeId));
         }
 
-        @GetMapping("/committee-positions/{id}")
+        @GetMapping("/{id}")
         public ResponseEntity<CommitteePositionResponse> getPosition(
                 @PathVariable("id") Long id) {
             return ResponseEntity.ok(positionService.getPositionById(id));
@@ -34,13 +34,13 @@ public class CommitteePositionController {
             return ResponseEntity.ok(positionService.getVacantPositionsByCommitteeId(committeeId));
         }
 
-        @PatchMapping("/committee-positions/{id}/activate")
+        @PatchMapping("/{id}/activate")
         public ResponseEntity<CommitteePositionResponse> activatePosition(
                 @PathVariable("id") Long id) {
             return ResponseEntity.ok(positionService.activatePosition(id));
         }
 
-        @PatchMapping("/committee-positions/{id}/deactivate")
+        @PatchMapping("/{id}/deactivate")
         public ResponseEntity<CommitteePositionResponse> deactivatePosition(
                 @PathVariable("id") Long id) {
             return ResponseEntity.ok(positionService.deactivatePosition(id));
