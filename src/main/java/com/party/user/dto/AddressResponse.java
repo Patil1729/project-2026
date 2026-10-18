@@ -2,7 +2,7 @@ package com.party.user.dto;
 
 import java.time.LocalDateTime;
 
-/** Structured API output; timestamp values are UTC, matching AuditableEntity. */
+
 public record AddressResponse(
         Long id,
         String houseOrFlatNumber,
