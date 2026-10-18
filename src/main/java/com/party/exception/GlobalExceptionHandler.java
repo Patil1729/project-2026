@@ -4,6 +4,7 @@ import com.party.committee.exception.InvalidCommitteePositionException;
 import com.party.common.dto.ErrorResponse;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
+import com.party.registration.exception.RegistrationException;
 import com.party.user.exception.InvalidUserRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -15,6 +16,7 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +24,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -271,7 +276,44 @@ public class GlobalExceptionHandler {
                 ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(RegistrationException.class)
+    public ResponseEntity<ErrorResponse> handleRegistration(
+            RegistrationException exception, HttpServletRequest request) {
 
+        return buildResponse(
+                exception.getStatus(),
+                exception.getErrorCode(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUploadTooLarge(
+            MaxUploadSizeExceededException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONTENT_TOO_LARGE, "FILE_TOO_LARGE",
+                "The upload exceeds the configured multipart size limit.", request.getRequestURI());
+    }
+
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidMultipart(
+            Exception exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_MULTIPART_REQUEST",
+                "Send a valid multipart/form-data request with a file part.", request.getRequestURI());
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ErrorResponse> handleFormBinding(
+            BindException exception, HttpServletRequest request) {
+        String message = exception.getFieldErrors().stream()
+                .map(field -> field.getField() + ": "
+                        + (field.isBindingFailure() ? "invalid value" : field.getDefaultMessage()))
+                .collect(Collectors.joining(", "));
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                message.isBlank() ? "Invalid request fields." : message, request.getRequestURI());
+    }
 
     private ResponseEntity<ErrorResponse> buildResponse(
             HttpStatus status,

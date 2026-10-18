@@ -10,7 +10,6 @@ import lombok.*;
 import java.time.Instant;
 import java.util.Objects;
 
-/** Metadata only. File objects stay in private storage. */
 @Entity
 @Table(name = "application_documents",
         uniqueConstraints = {

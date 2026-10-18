@@ -1,9 +1,9 @@
 package com.party.user.service;
 
 import com.party.electoral.entity.AssemblyConstituency;
+import com.party.electoral.exception.AssemblyConstituencyInUseException;
+import com.party.electoral.exception.AssemblyConstituencyNotFoundException;
 import com.party.electoral.repository.AssemblyConstituencyRepository;
-import com.party.exception.ResourceInUseException;
-import com.party.exception.ResourceNotFoundException;
 import com.party.user.dto.AddressRequest;
 import com.party.user.dto.AddressResponse;
 import com.party.user.dto.UserProfileRequest;
