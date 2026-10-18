@@ -154,7 +154,8 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long userId) {
         AppUser user = userRepository.findWithDetailsById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User with ID " + userId + " not found"));
         return mapToResponse(user);
     }
 
@@ -179,7 +180,8 @@ public class UserServiceImpl implements UserService {
 
     private AppUser findUserForUpdate(Long userId) {
         return userRepository.findByIdForUpdate(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User with ID " + userId + " not found"));
     }
 
     private OrganizationUnit resolveActiveHomeUnit(Long organizationUnitId) {
