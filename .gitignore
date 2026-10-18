@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Private registration uploads ###
+/private-storage/
+/verification/classes/
