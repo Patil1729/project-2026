@@ -1,4 +1,4 @@
-package com.party.user.exception;
+package com.party.electoral.exception;
 
 import com.party.exception.ResourceInUseException;
 
