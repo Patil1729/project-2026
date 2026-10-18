@@ -3,7 +3,7 @@ package com.party.user.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 
-/** Use as @NotNull @Valid AddressRequest address in the registration/profile DTO. */
+
 public record AddressRequest(
         @Size(max = 50) String houseOrFlatNumber,
         @Size(max = 150) String buildingName,
