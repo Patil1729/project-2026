@@ -54,4 +54,10 @@ public interface RegistrationApplicationRepository extends JpaRepository<Registr
     @Query("select a from RegistrationApplication a where a.id = :id and a.applicant.id = :applicantId")
     Optional<RegistrationApplication> findOwnedByIdForUpdate(
             @Param("id") Long id, @Param("applicantId") Long applicantId);
+
+    // Review and upload lock the same parent row before reading document versions.
+    // This query is not ownership-filtered: the review service checks appointment scope.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from RegistrationApplication a where a.id = :id")
+    Optional<RegistrationApplication> findByIdForDocumentReviewUpdate(@Param("id") Long id);
 }
