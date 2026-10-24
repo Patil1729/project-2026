@@ -2,8 +2,8 @@ package com.party.committee.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.party.common.entity.AuditableEntity;
-import com.party.registration.entity.RegistrationApplication;
-import com.party.registration.entity.RegistrationStatus;
+import com.party.registration.application.entity.RegistrationApplication;
+import com.party.registration.application.entity.RegistrationStatus;
 import com.party.user.entity.AppUser;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;

@@ -2,7 +2,7 @@ package com.party.committee.repository;
 
 import com.party.committee.entity.AdvocateAssignment;
 import com.party.committee.entity.CommitteePosition;
-import com.party.registration.entity.RegistrationStatus;
+import com.party.registration.application.entity.RegistrationStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

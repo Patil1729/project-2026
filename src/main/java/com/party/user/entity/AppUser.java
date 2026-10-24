@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.party.committee.entity.AdvocateAssignment;
 import com.party.common.entity.AuditableEntity;
 import com.party.organization.entity.OrganizationUnit;
-import com.party.registration.entity.RegistrationApplication;
+import com.party.registration.application.entity.RegistrationApplication;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

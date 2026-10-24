@@ -4,7 +4,7 @@ import com.party.committee.exception.InvalidCommitteePositionException;
 import com.party.common.dto.ErrorResponse;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
-import com.party.registration.exception.RegistrationException;
+import com.party.registration.common.exception.RegistrationException;
 import com.party.user.exception.InvalidUserRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
