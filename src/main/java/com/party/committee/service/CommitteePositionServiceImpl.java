@@ -13,7 +13,7 @@ import com.party.organization.entity.OrganizationType;
 import com.party.organization.entity.OrganizationUnit;
 import com.party.organization.exception.OrganizationUnitNotFoundException;
 import com.party.organization.repository.OrganizationUnitRepository;
-import com.party.registration.entity.RegistrationStatus;
+import com.party.registration.application.entity.RegistrationStatus;
 import com.party.user.entity.AppUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

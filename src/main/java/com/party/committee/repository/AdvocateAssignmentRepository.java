@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 
 @Repository
 public interface AdvocateAssignmentRepository extends JpaRepository<AdvocateAssignment, Long> {
@@ -43,4 +44,22 @@ public interface AdvocateAssignmentRepository extends JpaRepository<AdvocateAssi
             @Param("unitIds") Collection<Long> unitIds,
             @Param("positionType") CommitteePositionType positionType,
             @Param("today") LocalDate today);
+
+    @Query("""
+            select a from AdvocateAssignment a
+            join fetch a.advocate
+            join a.committeePosition p
+            join p.committee c
+            where c.id = :committeeId
+              and a.active = true and a.endDate is null and a.appointedDate <= :today
+              and a.advocate.enabled = true
+              and p.active = true and p.positionType = :positionType and p.positionNumber = 1
+              and c.active = true and c.organizationUnit.active = true
+            """)
+    List<AdvocateAssignment> findCurrentPresidentsForCommittee(
+            @Param("committeeId") Long committeeId,
+            @Param("positionType") CommitteePositionType positionType,
+            @Param("today") LocalDate today);
+
+    boolean existsByRegistrationApplication_Id(Long applicationId);
 }

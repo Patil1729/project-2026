@@ -1,0 +1,14 @@
+package com.party.registration.document.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ApplicationDocumentRejectionRequest {
+    @NotBlank(message = "A document rejection reason is required")
+    @Size(max = 2000)
+    private String reason;
+}
