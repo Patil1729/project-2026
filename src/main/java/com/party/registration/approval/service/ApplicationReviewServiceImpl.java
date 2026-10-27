@@ -1,6 +1,9 @@
 package com.party.registration.approval.service;
 
 import com.party.committee.entity.AdvocateAssignment;
+import com.party.committee.appointment.audit.entity.AppointmentAuditAction;
+import com.party.committee.appointment.audit.entity.AppointmentAuditLog;
+import com.party.committee.appointment.audit.repository.AppointmentAuditLogRepository;
 import com.party.committee.entity.Committee;
 import com.party.committee.entity.CommitteePosition;
 import com.party.committee.entity.CommitteePositionType;
@@ -70,6 +73,7 @@ public class ApplicationReviewServiceImpl implements ApplicationReviewService {
     private final CommitteePositionRepository positionRepository;
     private final OrganizationUnitRepository organizationRepository;
     private final RoleRepository roleRepository;
+    private final AppointmentAuditLogRepository appointmentAuditRepository;
 
     @Override
     public ApplicationReviewInboxResponse getPending(String username, int page, int size) {
@@ -182,6 +186,11 @@ public class ApplicationReviewServiceImpl implements ApplicationReviewService {
             } catch (DataIntegrityViolationException exception) {
                 throw conflict("APPOINTMENT_CONFLICT", "The appointment could not be saved. Reload the seat and retry.");
             }
+            appointmentAuditRepository.saveAndFlush(AppointmentAuditLog.builder()
+                    .assignment(appointment)
+                    .action(AppointmentAuditAction.APPOINTED_FROM_REGISTRATION)
+                    .eventAt(now).reason("All required heads approved registration application " + application.getApplicationNumber())
+                    .build());
             events.add(audit(application, active, context.reviewer(), ApprovalAuditAction.STEP_APPROVED, now,
                     "Final required stage approved"));
             events.add(audit(application, null, context.reviewer(), ApprovalAuditAction.APPLICATION_APPROVED, now,

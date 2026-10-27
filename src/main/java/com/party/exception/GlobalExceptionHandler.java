@@ -1,6 +1,7 @@
 package com.party.exception;
 
 import com.party.committee.exception.InvalidCommitteePositionException;
+import com.party.committee.appointment.exception.AppointmentException;
 import com.party.common.dto.ErrorResponse;
 import com.party.organization.exception.InvalidOrganizationHierarchyException;
 import com.party.organization.exception.OrganizationUnitHasChildrenException;
@@ -34,6 +35,12 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AppointmentException.class)
+    public ResponseEntity<ErrorResponse> handleAppointment(
+            AppointmentException exception, HttpServletRequest request) {
+        return buildResponse(exception.getStatus(), exception.getErrorCode(), exception.getMessage(), request.getRequestURI());
+    }
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 

@@ -1,6 +1,8 @@
 package com.party.registration.approval.service;
 
 import com.party.committee.entity.AdvocateAssignment;
+import com.party.committee.appointment.audit.entity.AppointmentAuditAction;
+import com.party.committee.appointment.audit.repository.AppointmentAuditLogRepository;
 import com.party.committee.entity.Committee;
 import com.party.committee.entity.CommitteePosition;
 import com.party.committee.entity.CommitteePositionType;
@@ -62,6 +64,7 @@ class ApplicationReviewServiceImplTest {
     @Mock CommitteePositionRepository positions;
     @Mock OrganizationUnitRepository organizations;
     @Mock RoleRepository roles;
+    @Mock AppointmentAuditLogRepository appointmentAudits;
 
     private ApplicationReviewServiceImpl service;
     private AppUser applicant;
@@ -83,7 +86,7 @@ class ApplicationReviewServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new ApplicationReviewServiceImpl(applications, users, steps, audits,
-                assignments, committees, positions, organizations, roles);
+                assignments, committees, positions, organizations, roles, appointmentAudits);
         applicant = AppUser.builder().id(1L).username("applicant").fullName("Shubham Patil").enabled(true)
                 .profile(UserProfile.builder().id(1L).build()).build();
         applicant.getRoles().add(Role.builder().id(1L).name(RoleType.APPLICANT).build());
@@ -354,6 +357,8 @@ class ApplicationReviewServiceImplTest {
         assertSame(applicant, saved.getValue().getAdvocate());
         assertSame(position, saved.getValue().getCommitteePosition());
         assertTrue(saved.getValue().isSourceApplicationValid());
+        verify(appointmentAudits).saveAndFlush(argThat(event -> event.getAction() == AppointmentAuditAction.APPOINTED_FROM_REGISTRATION
+                && event.getAssignment() == saved.getValue()));
         assertEvents(ApprovalAuditAction.STEP_APPROVED, ApprovalAuditAction.APPLICATION_APPROVED);
     }
 
