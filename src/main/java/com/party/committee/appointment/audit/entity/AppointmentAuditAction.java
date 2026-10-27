@@ -1,0 +1,10 @@
+package com.party.committee.appointment.audit.entity;
+
+public enum AppointmentAuditAction {
+    EXISTING_APPOINTMENT_IMPORTED,
+    APPOINTED_FROM_REGISTRATION,
+    STATE_PRESIDENT_BOOTSTRAPPED,
+    APPOINTMENT_ENDED,
+    APPOINTMENT_REPLACED,
+    APPOINTED_AS_REPLACEMENT
+}

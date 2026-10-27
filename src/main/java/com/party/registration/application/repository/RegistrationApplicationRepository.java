@@ -17,6 +17,9 @@ import java.util.Optional;
 @Repository
 public interface RegistrationApplicationRepository extends JpaRepository<RegistrationApplication, Long> {
 
+    @Query("select a.applicant.id from RegistrationApplication a where a.id = :id")
+    Optional<Long> findApplicantIdById(@Param("id") Long id);
+
     // Existing safeguard methods retained from registration.zip.
     boolean existsByRequestedPosition_Committee_IdAndStatusIn(
             Long committeeId, Collection<RegistrationStatus> statuses);
