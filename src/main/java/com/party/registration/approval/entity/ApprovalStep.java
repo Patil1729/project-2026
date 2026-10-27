@@ -127,6 +127,18 @@ public class ApprovalStep extends AuditableEntity {
         assignedReviewer = reviewer;
     }
 
+    /** Refresh a former senior's visibility without resetting the original escalation time. */
+    public void reassignEscalationTo(AppUser senior) {
+        if (!status.canBeDecided() || escalatedAt == null || escalatedTo == null) {
+            throw new IllegalStateException("Only an already escalated open step can change its senior");
+        }
+        requireEligibleIdentity(senior);
+        if (sameUser(senior, assignedReviewer)) {
+            throw new IllegalArgumentException("The senior must differ from the assigned reviewer");
+        }
+        escalatedTo = senior;
+    }
+
     /** Idempotent: repeated scheduler runs do not repeatedly change the state. */
     public boolean markOverdue(Instant now) {
         if (status != ApprovalStatus.PENDING || !ApprovalPolicy.isOverdue(dueAt, now)) {
