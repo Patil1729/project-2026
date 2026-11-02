@@ -5,6 +5,8 @@ import com.party.organization.entity.OrganizationUnit;
 import com.party.portal.dto.PortalSummary;
 import com.party.portal.dto.StateExecutiveMember;
 import com.party.portal.repository.PortalRepository;
+import com.party.help.repository.HelpRequestRepository;
+import com.party.help.entity.HelpStatus;
 import com.party.user.entity.RoleType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,19 +20,20 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class PortalService {
     private final PortalRepository repository;
-    private final Long grievancesResolved;
+    private final HelpRequestRepository helpRequests;
     private final Long activeLegalClinics;
 
     public PortalService(PortalRepository repository,
-            @Value("${app.portal.grievances-resolved:}") String grievancesResolved,
+            HelpRequestRepository helpRequests,
             @Value("${app.portal.active-legal-clinics:}") String activeLegalClinics) {
         this.repository = repository;
-        this.grievancesResolved = verifiedCount(grievancesResolved, "app.portal.grievances-resolved");
+        this.helpRequests = helpRequests;
         this.activeLegalClinics = verifiedCount(activeLegalClinics, "app.portal.active-legal-clinics");
     }
 
     public PortalSummary summary() {
-        return new PortalSummary(repository.countRegisteredAdvocates(RoleType.ADVOCATE), grievancesResolved, activeLegalClinics);
+        return new PortalSummary(repository.countRegisteredAdvocates(RoleType.ADVOCATE),
+                helpRequests.countByStatusIn(List.of(HelpStatus.RESOLVED, HelpStatus.CLOSED)), activeLegalClinics);
     }
 
     public List<StateExecutiveMember> stateExecutive() {

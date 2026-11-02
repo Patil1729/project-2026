@@ -14,18 +14,19 @@ import static org.mockito.Mockito.*;
 
 class PortalServiceTest {
     private final PortalRepository repository = mock(PortalRepository.class);
+    private final com.party.help.repository.HelpRequestRepository help = mock(com.party.help.repository.HelpRequestRepository.class);
     @Test void countsAdvocateMembershipsAndKeepsMissingMetricsUnknown() {
         when(repository.countRegisteredAdvocates(RoleType.ADVOCATE)).thenReturn(27L);
-        var summary = new PortalService(repository, "", "").summary();
+        var summary = new PortalService(repository, help, "").summary();
         assertEquals(27L, summary.registeredAdvocates());
-        assertNull(summary.grievancesResolved()); assertNull(summary.activeLegalClinics());
+        assertEquals(0L, summary.grievancesResolved()); assertNull(summary.activeLegalClinics());
         verify(repository).countRegisteredAdvocates(RoleType.ADVOCATE);
     }
     @Test void acceptsVerifiedCountersAndRejectsInvalidConfiguration() {
-        var summary = new PortalService(repository, "0", "12").summary();
+        var summary = new PortalService(repository, help, "12").summary();
         assertEquals(Long.valueOf(0), summary.grievancesResolved()); assertEquals(Long.valueOf(12), summary.activeLegalClinics());
-        assertThrows(IllegalArgumentException.class, () -> new PortalService(repository, "-1", "0"));
-        assertThrows(IllegalArgumentException.class, () -> new PortalService(repository, "sample", "0"));
+        assertThrows(IllegalArgumentException.class, () -> new PortalService(repository, help, "-1"));
+        assertThrows(IllegalArgumentException.class, () -> new PortalService(repository, help, "sample"));
     }
     @Test void publicCommitteeExcludesInactiveHierarchyAndProjectsOnlyPublicFields() {
         var parent = OrganizationUnit.builder().id(1L).active(true).build();
@@ -35,7 +36,7 @@ class PortalServiceTest {
         var assignment = AdvocateAssignment.builder().id(5L).committeePosition(position)
                 .advocate(AppUser.builder().id(7L).fullName("Adv. Test Person").email("private@example.test").build()).build();
         when(repository.findStateExecutive(eq(CommitteeType.STATE_COMMITTEE), any(LocalDate.class))).thenReturn(List.of(assignment));
-        var service = new PortalService(repository, "", "");
+        var service = new PortalService(repository, help, "");
         var members = service.stateExecutive(); assertEquals(1, members.size());
         assertEquals("Adv. Test Person", members.get(0).advocateName());
         assertFalse(members.get(0).toString().contains("private@example.test"));

@@ -92,6 +92,7 @@ public class WebSecurityConfiguration {
         http.authorizeHttpRequests(request->request
                 .dispatcherTypeMatchers(ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/public/gallery", "/api/public/gallery/*/image").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/portal/summary",
                         "/api/public/portal/state-executive",
                         "/api/public/portal/state-executive/positions",
