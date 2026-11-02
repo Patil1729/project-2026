@@ -1,5 +1,7 @@
 package com.party.organization.service;
 
+import com.party.administration.access.service.AreaAccessService;
+
 import com.party.committee.repository.AdvocateAssignmentRepository;
 import com.party.committee.repository.CommitteePositionRepository;
 import com.party.committee.repository.CommitteeRepository;
@@ -32,6 +34,7 @@ import java.util.Set;
 public class OrganizationServiceImpl implements OrganizationService {
 
     private final ModelMapper modelMapper;
+    private final AreaAccessService access;
     private final OrganizationUnitRepository organizationUnitRepository;
     private final CommitteeRepository committeeRepository;
     private final CommitteePositionRepository committeePositionRepository;
@@ -44,6 +47,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationUnitResponse create(OrganizationUnitRequest request) {
+        access.requireCreateOrganization(request);
 
         // 1. duplicate code -> 409
         if (organizationUnitRepository.existsByCode(request.getCode())) {
@@ -154,6 +158,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationUnitResponse update(Long id, OrganizationUnitRequest request) {
+        access.requireUpdateOrganization(id, request);
 
         OrganizationUnit unit = organizationUnitRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new OrganizationUnitNotFoundException(
@@ -222,6 +227,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public void delete(Long id) {
+        access.requireDeactivateOrganization(id);
         OrganizationUnit unit = findForUpdate(id);
         if (!Boolean.TRUE.equals(unit.getActive())) {
             return;
@@ -255,6 +261,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public OrganizationUnitResponse activate(Long id) {
+        access.requireUnit(id);
         OrganizationUnit unit = findForUpdate(id);
         OrganizationUnit current = unit;
         Set<Long> visited = new HashSet<>();

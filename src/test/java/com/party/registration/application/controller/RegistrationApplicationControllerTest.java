@@ -7,7 +7,6 @@ import com.party.registration.application.service.RegistrationApplicationService
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -21,13 +20,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RegistrationApplicationControllerTest {
     private RegistrationApplicationService service;
     private MockMvc mvc;
-    private MockEnvironment environment;
 
     @BeforeEach
     void setUp() {
         service = mock(RegistrationApplicationService.class);
-        environment = new MockEnvironment();
-        mvc = MockMvcBuilders.standaloneSetup(new RegistrationApplicationController(service, environment))
+
+        mvc = MockMvcBuilders.standaloneSetup(new RegistrationApplicationController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -97,43 +95,8 @@ class RegistrationApplicationControllerTest {
     }
 
     @Test
-    void localProfileCanCreateApplicationUsingConfiguredTestAccount() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        when(service.createApplication(eq("shubham.patil"), any())).thenReturn(
-                RegistrationApplicationResponse.builder().id(50L)
-                        .status(RegistrationStatus.AWAITING_RECOMMENDATION).build());
+    void applicationListUsesExactlyTheAuthenticatedPrincipal() throws Exception {
 
-        mvc.perform(post("/api/registration-applications")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"selectedShakhaId\":3,\"requestedPositionId\":20}"))
-                .andExpect(status().isCreated());
-        verify(service).createApplication(eq("shubham.patil"), any());
-    }
-
-    @Test
-    void configuredTestAccountCannotBypassAuthenticationWithoutLocalProfile() throws Exception {
-        environment.setActiveProfiles("prod");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-
-        mvc.perform(get("/api/registration-applications/my"))
-                .andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void localProfileWithoutTestAccountStillRequiresAuthentication() throws Exception {
-        environment.setActiveProfiles("local");
-
-        mvc.perform(get("/api/registration-applications/my"))
-                .andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void authenticatedPrincipalTakesPrecedenceOverLocalTestAccount() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
         when(service.getMyApplications("another.user")).thenReturn(List.of());
 
         mvc.perform(get("/api/registration-applications/my").principal(() -> "another.user"))
@@ -141,5 +104,13 @@ class RegistrationApplicationControllerTest {
                 .andExpect(jsonPath("$").isArray());
         verify(service).getMyApplications("another.user");
         verify(service, never()).getMyApplications("shubham.patil");
+    }
+
+    @Test
+    void missingBlankOrNamelessPrincipalNeverReachesService() throws Exception {
+        mvc.perform(get("/api/registration-applications/my")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/my").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/my").principal(() -> null)).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
     }
 }

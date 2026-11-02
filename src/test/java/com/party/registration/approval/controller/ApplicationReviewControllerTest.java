@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -31,14 +30,13 @@ class ApplicationReviewControllerTest {
     private static final String APPROVE = BASE + "/applications/10/steps/100/approve";
     private static final String REJECT = BASE + "/applications/10/steps/100/reject";
     private ApplicationReviewService service;
-    private MockEnvironment environment;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         service = mock(ApplicationReviewService.class);
-        environment = new MockEnvironment();
-        mvc = MockMvcBuilders.standaloneSetup(new ApplicationReviewController(service, environment))
+
+        mvc = MockMvcBuilders.standaloneSetup(new ApplicationReviewController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -51,38 +49,12 @@ class ApplicationReviewControllerTest {
     }
 
     @Test
-    void localProfileUsesReviewerIdentityAndNotApplicantIdentity() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-reviewer-username", " document.reviewer ");
-        environment.setProperty("app.registration.local-test-username", "applicant");
-        when(service.getPending("document.reviewer", 0, 20)).thenReturn(new ApplicationReviewInboxResponse(List.of(), 0, 20, false));
-        mvc.perform(get(BASE + "/pending")).andExpect(status().isOk());
-        verify(service).getPending("document.reviewer", 0, 20);
-    }
+    void reviewUsesExactlyTheAuthenticatedPrincipal() throws Exception {
 
-    @Test
-    void principalTakesPriorityOverLocalReviewer() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-reviewer-username", "local.head");
         when(service.getReview("real.head", 10L)).thenReturn(response());
         mvc.perform(get(BASE + "/applications/10").principal(() -> "real.head"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.application.status").value("UNDER_REVIEW"));
         verify(service).getReview("real.head", 10L);
-    }
-
-    @Test
-    void localPropertyDoesNotAuthenticateOutsideLocalProfile() throws Exception {
-        environment.setProperty("app.registration.local-reviewer-username", "head");
-        mvc.perform(get(BASE + "/pending")).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void blankLocalIdentityIsUnauthorized() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-reviewer-username", "  ");
-        mvc.perform(get(BASE + "/pending")).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
     }
 
     @Test
@@ -187,5 +159,13 @@ class ApplicationReviewControllerTest {
     private ApplicationReviewResponse response() {
         return new ApplicationReviewResponse(RegistrationApplicationResponse.builder().id(10L)
                 .status(RegistrationStatus.UNDER_REVIEW).build(), null, List.of());
+    }
+
+    @Test
+    void missingBlankOrNamelessPrincipalNeverReachesService() throws Exception {
+        mvc.perform(get("/api/application-reviews/pending")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/application-reviews/pending").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/application-reviews/pending").principal(() -> null)).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
     }
 }

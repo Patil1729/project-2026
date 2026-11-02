@@ -62,4 +62,16 @@ public interface AdvocateAssignmentRepository extends JpaRepository<AdvocateAssi
             @Param("today") LocalDate today);
 
     boolean existsByRegistrationApplication_Id(Long applicationId);
+
+    @org.springframework.data.jpa.repository.Query("""
+        select a from AdvocateAssignment a join fetch a.committeePosition p join fetch p.committee c
+        join fetch c.organizationUnit u
+        where a.advocate.id = :userId and a.active = true and a.endDate is null and a.appointedDate <= :today
+          and a.advocate.enabled = true and p.active = true and c.active = true and u.active = true
+          and p.positionType = :president and p.positionNumber = 1
+        """)
+    java.util.List<AdvocateAssignment> findCurrentPresidenciesForUser(
+        @org.springframework.data.repository.query.Param("userId") Long userId,
+        @org.springframework.data.repository.query.Param("president") com.party.committee.entity.CommitteePositionType president,
+        @org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
 }

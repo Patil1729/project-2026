@@ -21,6 +21,8 @@ public class UserResponse {
     private final String mobile;
     private final String email;
     private final boolean enabled;
+    private final boolean hasProfilePicture;
+    private final String profilePictureVersion;
     private final boolean passwordChangeRequired;
     private final Long organizationUnitId;
     private final String organizationUnitName;

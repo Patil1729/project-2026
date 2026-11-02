@@ -9,8 +9,6 @@ import com.party.registration.document.service.ApplicationDocumentReviewService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -35,7 +33,6 @@ import java.util.List;
 @RequestMapping("/api/document-reviews/applications/{applicationId}/documents")
 public class ApplicationDocumentReviewController {
     private final ApplicationDocumentReviewService reviewService;
-    private final Environment environment;
 
     @GetMapping
     public ResponseEntity<List<ApplicationDocumentResponse>> list(
@@ -89,16 +86,9 @@ public class ApplicationDocumentReviewController {
     }
 
     private String username(Principal principal) {
-        // Development identity only; appointment scope and self-review checks still run.
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String localUsername = environment.getProperty("app.registration.local-reviewer-username");
-            if (localUsername != null && !localUsername.isBlank()) {
-                return localUsername.strip();
-            }
-        }
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
-                    "A reviewer identity is required to review documents.");
+                    "Sign in before accessing this resource.");
         }
         return principal.getName();
     }

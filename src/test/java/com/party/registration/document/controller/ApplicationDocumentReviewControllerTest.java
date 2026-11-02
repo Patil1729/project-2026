@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -29,14 +28,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ApplicationDocumentReviewControllerTest {
     private static final String BASE = "/api/document-reviews/applications/10/documents";
     private ApplicationDocumentReviewService service;
-    private MockEnvironment environment;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         service = mock(ApplicationDocumentReviewService.class);
-        environment = new MockEnvironment();
-        mvc = MockMvcBuilders.standaloneSetup(new ApplicationDocumentReviewController(service, environment))
+
+        mvc = MockMvcBuilders.standaloneSetup(new ApplicationDocumentReviewController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -54,34 +52,8 @@ class ApplicationDocumentReviewControllerTest {
     }
 
     @Test
-    void localReviewerIdentityIsSeparateFromTheApplicantIdentity() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        environment.setProperty("app.registration.local-reviewer-username", " document.reviewer ");
-        when(service.list("document.reviewer", 10L)).thenReturn(List.of(response()));
-        mvc.perform(get(BASE)).andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(100));
-        verify(service).list("document.reviewer", 10L);
-    }
+    void documentListUsesExactlyTheAuthenticatedPrincipal() throws Exception {
 
-    @Test
-    void applicantTestIdentityIsNeverUsedAsAReviewerFallback() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        mvc.perform(get(BASE)).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void reviewerPropertyHasNoEffectOutsideLocalProfile() throws Exception {
-        environment.setProperty("app.registration.local-reviewer-username", "document.reviewer");
-        mvc.perform(get(BASE)).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void aRealPrincipalTakesPriorityOverTheLocalReviewer() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-reviewer-username", "document.reviewer");
         when(service.list("real.head", 10L)).thenReturn(List.of());
         mvc.perform(get(BASE).principal(() -> "real.head")).andExpect(status().isOk());
         verify(service).list("real.head", 10L);
@@ -169,5 +141,13 @@ class ApplicationDocumentReviewControllerTest {
                 "proof.pdf", "application/pdf", 23L, "a".repeat(64), DocumentStatus.VERIFIED,
                 1L, Instant.parse("2026-10-18T10:00:00Z"), 2L,
                 Instant.parse("2026-10-19T10:00:00Z"), "Checked");
+    }
+
+    @Test
+    void missingBlankOrNamelessPrincipalNeverReachesService() throws Exception {
+        mvc.perform(get("/api/document-reviews/applications/10/documents")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/document-reviews/applications/10/documents").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/document-reviews/applications/10/documents").principal(() -> null)).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
     }
 }

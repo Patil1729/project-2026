@@ -21,6 +21,7 @@ import com.party.user.exception.UserNotFoundException;
 import com.party.user.repository.RoleRepository;
 import com.party.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.party.administration.access.service.AreaAccessService;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final AreaAccessService access;
     private final RoleRepository roleRepository;
     private final OrganizationUnitRepository organizationUnitRepository;
     private final AdvocateAssignmentRepository advocateAssignmentRepository;
@@ -102,6 +104,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse updateUser(Long userId, UserUpdateRequest request) {
+        access.requirePartyHead();
         OrganizationUnit homeUnit = resolveActiveHomeUnit(request.getOrganizationUnitId());
         AppUser user = findUserForUpdate(userId);
         String username = request.getUsername().strip().toLowerCase(Locale.ROOT);
@@ -127,6 +130,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse deactivateUser(Long userId) {
+        access.requirePartyHead();
         AppUser user = findUserForUpdate(userId);
         if (!user.isEnabled()) {
             return mapToResponse(user);
@@ -153,6 +157,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long userId) {
+        access.requireReadUser(userId);
         AppUser user = userRepository.findWithDetailsById(userId)
                 .orElseThrow(() -> new UserNotFoundException(
                         "User with ID " + userId + " not found"));
@@ -162,7 +167,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
+        var scope = access.requireAdministrator();
+        var sort = Sort.by(Sort.Direction.ASC, "id");
+        return (scope.global() ? userRepository.findAll(sort) : userRepository.findAllByOrganizationUnit_IdIn(scope.unitIds(), sort))
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -210,6 +217,8 @@ public class UserServiceImpl implements UserService {
                 .mobile(user.getMobile())
                 .email(user.getEmail())
                 .enabled(user.isEnabled())
+                .hasProfilePicture(user.getProfilePictureKey() != null)
+                .profilePictureVersion(user.getProfilePictureSha256())
                 .passwordChangeRequired(user.isPasswordChangeRequired())
                 .organizationUnitId(homeUnit == null ? null : homeUnit.getId())
                 .organizationUnitName(homeUnit == null ? null : homeUnit.getName())

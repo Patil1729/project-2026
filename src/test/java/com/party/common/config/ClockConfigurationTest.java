@@ -19,6 +19,7 @@ import com.party.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import java.time.Clock;
+import com.party.administration.access.service.AreaAccessService;
 import java.time.ZoneOffset;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -28,6 +29,7 @@ class ClockConfigurationTest {
     private final ApplicationContextRunner context = new ApplicationContextRunner()
             .withUserConfiguration(AppConfiguration.class, ApprovalEscalationConfiguration.class,
                     AppointmentServiceImpl.class, AdminDashboardServiceImpl.class, ReviewerReassignmentServiceImpl.class)
+            .withBean(AreaAccessService.class, () -> mock(AreaAccessService.class))
             .withBean(AppointmentRepository.class, () -> mock(AppointmentRepository.class))
             .withBean(AppointmentAuditLogRepository.class, () -> mock(AppointmentAuditLogRepository.class))
             .withBean(UserRepository.class, () -> mock(UserRepository.class))

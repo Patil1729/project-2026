@@ -6,8 +6,6 @@ import com.party.registration.common.exception.RegistrationException;
 import com.party.registration.submission.service.RegistrationSubmissionService;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +23,6 @@ import java.util.List;
 @RequestMapping("/api/registration-applications")
 public class RegistrationSubmissionController {
     private final RegistrationSubmissionService submissionService;
-    private final Environment environment;
 
     @PostMapping("/{applicationId}/submit")
     public ResponseEntity<RegistrationSubmissionResponse> submit(
@@ -42,15 +39,9 @@ public class RegistrationSubmissionController {
     }
 
     private String username(Principal principal) {
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String username = environment.getProperty("app.registration.local-test-username");
-            if (username != null && !username.isBlank()) {
-                return username.strip();
-            }
-        }
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
-                    "An applicant identity is required to submit or track this application.");
+                    "Sign in before accessing this resource.");
         }
         return principal.getName();
     }

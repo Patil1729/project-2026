@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.party.administration.access.service.AreaAccessService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 
@@ -44,6 +45,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationDocumentReviewServiceImplTest {
+    @Mock AreaAccessService access;
     @Mock ApplicationDocumentRepository documents;
     @Mock RegistrationApplicationRepository applications;
     @Mock RegistrationApplicantRepository users;
@@ -61,7 +63,7 @@ class ApplicationDocumentReviewServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new ApplicationDocumentReviewServiceImpl(documents, applications, users, assignments, audits, storage);
+        service = new ApplicationDocumentReviewServiceImpl(documents, applications, users, assignments, audits, storage, access);
         applicant = AppUser.builder().id(1L).username("shubham.patil").enabled(true).build();
         reviewer = AppUser.builder().id(2L).username("document.reviewer").enabled(true).build();
         OrganizationUnit party = OrganizationUnit.builder().id(1L).type(OrganizationType.PARTY).build();
@@ -294,6 +296,22 @@ class ApplicationDocumentReviewServiceImplTest {
         assertThrows(DataIntegrityViolationException.class,
                 () -> service.verify("document.reviewer", 10L, 100L, new ApplicationDocumentVerificationRequest()));
         // Real rollback and concurrent requests require the database integration check.
+    }
+
+    @Test void areaAdministrationAllowsDocumentReadWithoutPresidency() {
+        when(users.findByUsername("document.reviewer")).thenReturn(Optional.of(reviewer));
+        when(applications.findById(10L)).thenReturn(Optional.of(application));
+        when(access.canAccessUnit(3L)).thenReturn(true);
+        when(documents.findAllByApplication_IdOrderByIdDesc(10L)).thenReturn(List.of(document));
+        assertEquals(1, service.list("document.reviewer",10L).size());
+        verifyNoInteractions(assignments);
+    }
+    @Test void areaAdministrationNeverSubstitutesForPresidentVerification() {
+        when(users.findByUsername("document.reviewer")).thenReturn(Optional.of(reviewer));
+        when(applications.findByIdForDocumentReviewUpdate(10L)).thenReturn(Optional.of(application));
+        assertFailure(HttpStatus.FORBIDDEN, "DOCUMENT_REVIEW_FORBIDDEN",
+                () -> service.verify("document.reviewer",10L,100L,new ApplicationDocumentVerificationRequest()));
+        verifyNoInteractions(access,documents,audits);
     }
 
     private void allowRead() {

@@ -18,7 +18,7 @@ import java.time.*;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Opt-in: requires an isolated MySQL schema. Flyway applies V1-V5 before these tests. */
+/** Opt-in: requires an isolated MySQL schema. Flyway applies V1-V6 before these tests. */
 @EnabledIfEnvironmentVariable(named = "LEGALCELL_INTEGRATION", matches = "true")
 @SpringBootTest(properties = {
         "spring.datasource.url=${LEGALCELL_TEST_DB_URL}",
@@ -38,7 +38,11 @@ class AdminRepositoryIntegrationTest {
     String token;
     int serial;
 
+    @AfterEach void clearIdentity() { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
     @BeforeEach void fixture() {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("party.head", null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("PARTY_HEAD"))));
         token = UUID.randomUUID().toString().substring(0, 8);
         var party = unit(OrganizationType.PARTY, null);
         state = unit(OrganizationType.STATE, party);

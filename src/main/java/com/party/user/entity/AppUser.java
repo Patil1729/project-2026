@@ -63,6 +63,19 @@ public class AppUser extends AuditableEntity {
     @Column(length = 255)
     private String email;
 
+    @JsonIgnore @Column(name = "profile_picture_key", length = 500)
+    private String profilePictureKey;
+    @JsonIgnore @Column(name = "profile_picture_sha256", length = 64)
+    private String profilePictureSha256;
+    @JsonIgnore @Column(name = "profile_picture_size_bytes")
+    private Long profilePictureSizeBytes;
+    @JsonIgnore @Column(name = "profile_picture_width")
+    private Integer profilePictureWidth;
+    @JsonIgnore @Column(name = "profile_picture_height")
+    private Integer profilePictureHeight;
+    @JsonIgnore @Column(name = "profile_picture_uploaded_at")
+    private java.time.Instant profilePictureUploadedAt;
+
     // Optional home/shakha. It does not grant authority over this unit.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_unit_id",

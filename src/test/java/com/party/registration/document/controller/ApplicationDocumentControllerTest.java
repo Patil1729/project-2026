@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -28,14 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class ApplicationDocumentControllerTest {
     private ApplicationDocumentService service;
-    private MockEnvironment environment;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         service = mock(ApplicationDocumentService.class);
-        environment = new MockEnvironment();
-        mvc = MockMvcBuilders.standaloneSetup(new ApplicationDocumentController(service, environment))
+
+        mvc = MockMvcBuilders.standaloneSetup(new ApplicationDocumentController(service))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -55,20 +53,8 @@ class ApplicationDocumentControllerTest {
     }
 
     @Test
-    void localProfileAllowsNoAuthUsingConfiguredAccount() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        when(service.upload(eq("shubham.patil"), eq(1L), any())).thenReturn(response());
+    void uploadWithoutPrincipalIsUnauthorized() throws Exception {
 
-        mvc.perform(multipart("/api/registration-applications/1/documents")
-                        .file(file()).param("documentType", "IDENTITY_PROOF"))
-                .andExpect(status().isCreated());
-        verify(service).upload(eq("shubham.patil"), eq(1L), any());
-    }
-
-    @Test
-    void noPrincipalOutsideLocalProfileIsUnauthorized() throws Exception {
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
         mvc.perform(multipart("/api/registration-applications/1/documents")
                         .file(file()).param("documentType", "IDENTITY_PROOF"))
                 .andExpect(status().isUnauthorized());
@@ -130,5 +116,13 @@ class ApplicationDocumentControllerTest {
         return new ApplicationDocumentResponse(100L, 1L, DocumentType.IDENTITY_PROOF, 1,
                 "proof.pdf", "application/pdf", 23L, "a".repeat(64), DocumentStatus.UPLOADED,
                 1L, Instant.parse("2026-10-18T15:00:00Z"), null, null, null);
+    }
+
+    @Test
+    void missingBlankOrNamelessPrincipalNeverReachesService() throws Exception {
+        mvc.perform(get("/api/registration-applications/1/documents")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/1/documents").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/1/documents").principal(() -> null)).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
     }
 }

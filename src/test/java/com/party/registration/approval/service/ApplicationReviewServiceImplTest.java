@@ -421,7 +421,8 @@ class ApplicationReviewServiceImplTest {
     void uniqueSeatConstraintIsReportedAsConflictAndNoAuditIsWritten() {
         prepareLast();
         ready(secondHead, second);
-        when(assignments.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("unique seat"));
+        doThrow(new DataIntegrityViolationException("unique seat"))
+                .when(assignments).saveAndFlush(any(AdvocateAssignment.class));
         failure(HttpStatus.CONFLICT, "APPOINTMENT_CONFLICT", this::approveLast);
         verifyNoInteractions(audits);
         // Mocks do not roll back mutated objects. Real rollback must be checked with MySQL.

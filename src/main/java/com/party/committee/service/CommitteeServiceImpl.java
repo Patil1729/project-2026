@@ -1,5 +1,7 @@
 package com.party.committee.service;
 
+import com.party.administration.access.service.AreaAccessService;
+
 import com.party.committee.dto.CommitteeRequest;
 import com.party.committee.dto.CommitteeResponse;
 import com.party.committee.entity.Committee;
@@ -32,6 +34,7 @@ import java.util.*;
 public class CommitteeServiceImpl implements CommitteeService {
 
     private final CommitteeRepository committeeRepository;
+    private final AreaAccessService access;
     private final OrganizationUnitRepository organizationUnitRepository;
     private final CommitteePositionRepository committeePositionRepository;
     private final AdvocateAssignmentRepository advocateAssignmentRepository;
@@ -40,6 +43,7 @@ public class CommitteeServiceImpl implements CommitteeService {
 
     @Override
     public CommitteeResponse createCommittee(CommitteeRequest request) {
+        access.requireUnit(request.getOrganizationUnitId());
 
         String code = request.getCode().trim().toUpperCase(Locale.ROOT);
 
@@ -208,6 +212,8 @@ public class CommitteeServiceImpl implements CommitteeService {
     @Transactional
     public CommitteeResponse updateCommittee(
             Long id, CommitteeRequest request) {
+        access.requireCommittee(id);
+        access.requireUnit(request.getOrganizationUnitId());
 
         // 1. Find the existing committee.
         Committee committee = committeeRepository.findById(id)
@@ -253,6 +259,7 @@ public class CommitteeServiceImpl implements CommitteeService {
 
     @Override
     public void deactivateCommittee(Long id) {
+        access.requireCommittee(id);
 
         Committee committee = committeeRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new CommitteeNotFoundException(
@@ -287,6 +294,7 @@ public class CommitteeServiceImpl implements CommitteeService {
 
     @Override
     public void activateCommittee(Long id) {
+        access.requireCommittee(id);
 
         Committee committee = committeeRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new CommitteeNotFoundException(

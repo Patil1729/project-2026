@@ -1,5 +1,7 @@
 package com.party.committee.service;
 
+import com.party.administration.access.service.AreaAccessService;
+
 
 import com.party.committee.dto.CommitteePositionResponse;
 import com.party.committee.entity.*;
@@ -27,6 +29,7 @@ import java.util.*;
 public class CommitteePositionServiceImpl implements CommitteePositionService {
 
     private final CommitteePositionRepository committeePositionRepository;
+    private final AreaAccessService access;
     private final CommitteeRepository committeeRepository;
     private final OrganizationUnitRepository organizationUnitRepository;
 
@@ -67,6 +70,7 @@ public class CommitteePositionServiceImpl implements CommitteePositionService {
 
     @Override
     public CommitteePositionResponse activatePosition(Long id) {
+        access.requirePosition(id);
         CommitteePosition position = findPositionForUpdate(id);
         String reason = getUnavailabilityReason(position);
         if (reason != null) {
@@ -82,6 +86,7 @@ public class CommitteePositionServiceImpl implements CommitteePositionService {
 
     @Override
     public CommitteePositionResponse deactivatePosition(Long id) {
+        access.requirePosition(id);
         CommitteePosition position = findPositionForUpdate(id);
 
         if (!position.isActive()) {

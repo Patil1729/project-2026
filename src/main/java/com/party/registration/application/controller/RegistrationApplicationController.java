@@ -7,8 +7,6 @@ import com.party.registration.application.service.RegistrationApplicationService
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +26,6 @@ import java.util.List;
 public class RegistrationApplicationController {
 
     private final RegistrationApplicationService applicationService;
-    private final Environment environment;
 
     @PostMapping
     public ResponseEntity<RegistrationApplicationResponse> createApplication(
@@ -49,17 +46,9 @@ public class RegistrationApplicationController {
     }
 
     private String username(Principal principal) {
-        // Explicit local-only testing while authentication is not implemented.
-        // An authenticated principal always takes precedence over this account.
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String localUsername = environment.getProperty("app.registration.local-test-username");
-            if (localUsername != null && !localUsername.isBlank()) {
-                return localUsername.strip();
-            }
-        }
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
-                    "Sign in before accessing registration applications.");
+                    "Sign in before accessing this resource.");
         }
         return principal.getName();
     }
