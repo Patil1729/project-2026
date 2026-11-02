@@ -16,6 +16,10 @@ import java.util.Locale;
 public class ProfileImageNormalizer {
     public record Image(byte[] bytes, int width, int height) { }
     public Image normalize(MultipartFile file, long maxBytes) {
+        return normalize(file, maxBytes, 512);
+    }
+    public Image normalize(MultipartFile file, long maxBytes, int maxDimension) {
+        if (maxDimension < 1 || maxDimension > 2000) throw new IllegalArgumentException("Invalid image output dimensions");
         if (file == null || file.isEmpty()) throw failure(HttpStatus.BAD_REQUEST, "PROFILE_PICTURE_REQUIRED", "Select a JPG or PNG picture.");
         if (file.getSize() > maxBytes) throw failure(HttpStatus.CONTENT_TOO_LARGE, "PROFILE_PICTURE_TOO_LARGE", "The picture exceeds the allowed file size.");
         ImageReader reader = null;
@@ -34,11 +38,11 @@ public class ProfileImageNormalizer {
                 if (width < 1 || height < 1 || width > 12000 || height > 12000 || (long) width * height > 40000000)
                     throw failure(HttpStatus.BAD_REQUEST, "PROFILE_PICTURE_DIMENSIONS", "Choose an image of at most 40 megapixels and 12000 pixels per side.");
                 var params = reader.getDefaultReadParam();
-                int sample = Math.max(1, (Math.max(width, height) + 1023) / 1024);
+                int sample = Math.max(1, Math.max(width, height) / (maxDimension * 2));
                 params.setSourceSubsampling(sample, sample, 0, 0);
                 BufferedImage decoded = reader.read(0, params);
                 if (decoded == null) throw invalid();
-                double ratio = Math.min(1, 512.0 / Math.max(decoded.getWidth(), decoded.getHeight()));
+                double ratio = Math.min(1, (double) maxDimension / Math.max(decoded.getWidth(), decoded.getHeight()));
                 int w = Math.max(1, (int) Math.round(decoded.getWidth() * ratio));
                 int h = Math.max(1, (int) Math.round(decoded.getHeight() * ratio));
                 var result = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);

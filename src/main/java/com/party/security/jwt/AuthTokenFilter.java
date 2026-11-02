@@ -36,6 +36,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 || ("GET".equals(request.getMethod()) && (path.equals("/api/public/portal/summary")
                     || path.equals("/api/public/portal/state-executive")
                     || path.equals("/api/public/portal/state-executive/positions")
+                    || path.equals("/api/public/gallery")
+                    || path.matches("/api/public/gallery/[1-9][0-9]*/image")
                     || path.equals("/api/public/portal/organization-units")));
     }
 
