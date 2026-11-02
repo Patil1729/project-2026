@@ -1,0 +1,189 @@
+{
+  "purpose": "Manual test catalogue for an isolated test database; no automatic production seeding. Resolve keys to generated IDs. Choose unique mobiles and passwords yourself. Six extra divisions are QA placeholders only.",
+  "organizations": [
+    {
+      "key": "party",
+      "name": "Shiv Sena Legal Cell",
+      "type": "PARTY",
+      "parent": null
+    },
+    {
+      "key": "state",
+      "name": "Maharashtra",
+      "type": "STATE",
+      "parent": "party"
+    },
+    {
+      "key": "west",
+      "name": "West Maharashtra Division",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division2",
+      "name": "QA Division 2",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division3",
+      "name": "QA Division 3",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division4",
+      "name": "QA Division 4",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division5",
+      "name": "QA Division 5",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division6",
+      "name": "QA Division 6",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "division7",
+      "name": "QA Division 7",
+      "type": "DIVISION",
+      "parent": "state"
+    },
+    {
+      "key": "kolhapur",
+      "name": "Kolhapur",
+      "type": "DISTRICT",
+      "parent": "west"
+    },
+    {
+      "key": "zone",
+      "name": "Kolhapur Rural — QA Zone",
+      "type": "DIVISIONAL_DISTRICT",
+      "parent": "kolhapur"
+    },
+    {
+      "key": "taluka",
+      "name": "Chandgad",
+      "type": "TALUKA",
+      "parent": "zone"
+    },
+    {
+      "key": "constituency",
+      "name": "QA Chandgad Constituency",
+      "type": "ASSEMBLY_CONSTITUENCY",
+      "parent": "zone"
+    },
+    {
+      "key": "corporation",
+      "name": "QA Municipal Corporation",
+      "type": "MUNICIPAL_CORPORATION",
+      "parent": "zone"
+    },
+    {
+      "key": "council",
+      "name": "QA Municipal Council",
+      "type": "MUNICIPAL_COUNCIL",
+      "parent": "zone"
+    },
+    {
+      "key": "panchayat",
+      "name": "QA Nagar Panchayat",
+      "type": "NAGAR_PANCHAYAT",
+      "parent": "zone"
+    },
+    {
+      "key": "outside",
+      "name": "Sangli — QA outside district",
+      "type": "DISTRICT",
+      "parent": "west"
+    }
+  ],
+  "adminAccounts": [
+    {
+      "username": "qa.state.admin",
+      "homeUnitKey": "state",
+      "areaRole": "STATE_ADMIN",
+      "grantUnitKey": "state",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.division.admin",
+      "homeUnitKey": "west",
+      "areaRole": "DIVISION_ADMIN",
+      "grantUnitKey": "west",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.district.admin",
+      "homeUnitKey": "kolhapur",
+      "areaRole": "DISTRICT_ADMIN",
+      "grantUnitKey": "kolhapur",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.zone.admin",
+      "homeUnitKey": "zone",
+      "areaRole": "DIVISIONAL_DISTRICT_ADMIN",
+      "grantUnitKey": "zone",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.constituency.admin",
+      "homeUnitKey": "constituency",
+      "areaRole": "CONSTITUENCY_ADMIN",
+      "grantUnitKey": "constituency",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.taluka.admin",
+      "homeUnitKey": "taluka",
+      "areaRole": "TALUKA_ADMIN",
+      "grantUnitKey": "taluka",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.corporation.admin",
+      "homeUnitKey": "corporation",
+      "areaRole": "MUNICIPAL_CORPORATION_ADMIN",
+      "grantUnitKey": "corporation",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.council.admin",
+      "homeUnitKey": "council",
+      "areaRole": "MUNICIPAL_COUNCIL_ADMIN",
+      "grantUnitKey": "council",
+      "grantReason": "Area administrator testing"
+    },
+    {
+      "username": "qa.panchayat.admin",
+      "homeUnitKey": "panchayat",
+      "areaRole": "NAGAR_PANCHAYAT_ADMIN",
+      "grantUnitKey": "panchayat",
+      "grantReason": "Area administrator testing"
+    }
+  ],
+  "applicant": {
+    "username": "qa.halakarni.applicant",
+    "homeUnitKey": "taluka",
+    "initialRole": "APPLICANT",
+    "address": {
+      "village": "Halakarni",
+      "taluka": "Chandgad",
+      "district": "Kolhapur",
+      "state": "Maharashtra",
+      "country": "India"
+    }
+  },
+  "scopeExclusion": {
+    "role": "DISTRICT_ADMIN",
+    "grantUnitKey": "kolhapur",
+    "deniedUnitKey": "outside"
+  }
+}
