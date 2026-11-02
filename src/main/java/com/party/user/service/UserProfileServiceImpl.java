@@ -1,6 +1,7 @@
 package com.party.user.service;
 
 import com.party.electoral.entity.AssemblyConstituency;
+import com.party.administration.access.service.AreaAccessService;
 import com.party.electoral.exception.AssemblyConstituencyInUseException;
 import com.party.electoral.exception.AssemblyConstituencyNotFoundException;
 import com.party.electoral.repository.AssemblyConstituencyRepository;
@@ -28,6 +29,7 @@ import java.util.Locale;
 public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository profileRepository;
+    private final AreaAccessService access;
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
     private final AssemblyConstituencyRepository constituencyRepository;
@@ -72,6 +74,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional(readOnly = true)
     public UserProfileResponse getProfileByUserId(Long userId) {
+        access.requireReadUser(userId);
         return mapToResponse(findProfile(userId));
     }
 

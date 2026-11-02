@@ -1,6 +1,7 @@
 package com.party.committee.appointment.service;
 
 import com.party.common.dto.PageResponse;
+import com.party.administration.access.service.AreaAccessService;
 import com.party.committee.appointment.audit.entity.*;
 import com.party.committee.appointment.audit.repository.AppointmentAuditLogRepository;
 import com.party.committee.appointment.dto.*;
@@ -28,6 +29,7 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentRepository appointments;
+    private final AreaAccessService access;
     private final AppointmentAuditLogRepository audits;
     private final UserRepository users;
     private final RoleRepository roles;
@@ -39,6 +41,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public AppointmentResponse bootstrapStatePresident(BootstrapPresidentRequest request) {
+        access.requirePartyHead();
         String reason = reason(request.reason());
         AppUser advocate = lockUser(request.advocateUserId());
         requireEligible(advocate);
@@ -59,14 +62,19 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public AppointmentResponse getById(Long id) {
-        return toResponse(appointments.findById(id).orElseThrow(this::notFound));
+        var assignment = appointments.findById(id).orElseThrow(this::notFound);
+        access.requireUnit(assignment.getCommitteePosition().getCommittee().getOrganizationUnit().getId());
+        return toResponse(assignment);
     }
 
     @Override
     public PageResponse<AppointmentResponse> search(AppointmentSearchRequest request) {
+        var scope = access.requireAdministrator();
+        if (request.getCommitteeId() != null) access.requireCommittee(request.getCommitteeId());
         validatePage(request.getPage(), request.getSize());
         Specification<AdvocateAssignment> filters = (root, query, cb) -> {
             var predicates = new ArrayList<Predicate>();
+            if (!scope.global()) predicates.add(root.get("committeePosition").get("committee").get("organizationUnit").get("id").in(scope.unitIds()));
             if (request.getCommitteeId() != null) predicates.add(cb.equal(root.get("committeePosition").get("committee").get("id"), request.getCommitteeId()));
             if (request.getAdvocateUserId() != null) predicates.add(cb.equal(root.get("advocate").get("id"), request.getAdvocateUserId()));
             if (request.getPositionType() != null) predicates.add(cb.equal(root.get("committeePosition").get("positionType"), request.getPositionType()));
@@ -80,6 +88,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public AppointmentResponse end(Long id, EndAppointmentRequest request) {
+        access.requirePartyHead();
         String reason = reason(request.reason());
         AppointmentReference ref = reference(id);
         lockUser(ref.advocateUserId());
@@ -96,6 +105,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public AppointmentReplacementResponse replace(Long id, ReplaceAppointmentRequest request) {
+        access.requirePartyHead();
         String reason = reason(request.reason());
         AppointmentReference ref = reference(id);
         if (Objects.equals(ref.advocateUserId(), request.advocateUserId()))
@@ -124,7 +134,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public PageResponse<AppointmentAuditResponse> history(Long id, int page, int size) {
-        if (!appointments.existsById(id)) throw notFound();
+        getById(id); // Checks the appointment scope before loading its history.
         validatePage(page, size);
         return PageResponse.from(audits.findByAssignment_IdOrderByEventAtAscIdAsc(id, PageRequest.of(page, size))
                 .map(event -> new AppointmentAuditResponse(event.getId(), id,

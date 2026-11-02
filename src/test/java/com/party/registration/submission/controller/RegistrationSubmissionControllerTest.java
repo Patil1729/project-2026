@@ -9,7 +9,6 @@ import com.party.registration.submission.service.RegistrationSubmissionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -22,14 +21,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class RegistrationSubmissionControllerTest {
     private RegistrationSubmissionService service;
-    private MockEnvironment environment;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         service = mock(RegistrationSubmissionService.class);
-        environment = new MockEnvironment();
-        mvc = MockMvcBuilders.standaloneSetup(new RegistrationSubmissionController(service, environment))
+
+        mvc = MockMvcBuilders.standaloneSetup(new RegistrationSubmissionController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
     }
 
@@ -42,26 +40,8 @@ class RegistrationSubmissionControllerTest {
     }
 
     @Test
-    void localModeUsesTheApplicantIdentityNotTheReviewerIdentity() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        environment.setProperty("app.registration.local-reviewer-username", "head");
-        when(service.submit("shubham.patil", 10L)).thenReturn(response());
-        mvc.perform(post("/api/registration-applications/10/submit")).andExpect(status().isOk());
-        verify(service).submit("shubham.patil", 10L);
-    }
+    void submissionUsesExactlyTheAuthenticatedPrincipal() throws Exception {
 
-    @Test
-    void localUsernameCannotBeUsedOutsideTheLocalProfile() throws Exception {
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
-        mvc.perform(post("/api/registration-applications/10/submit")).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void realPrincipalTakesPriorityOverTheLocalAccount() throws Exception {
-        environment.setActiveProfiles("local");
-        environment.setProperty("app.registration.local-test-username", "shubham.patil");
         when(service.submit("real.applicant", 10L)).thenReturn(response());
         mvc.perform(post("/api/registration-applications/10/submit").principal(() -> "real.applicant"))
                 .andExpect(status().isOk());
@@ -103,5 +83,13 @@ class RegistrationSubmissionControllerTest {
     private RegistrationSubmissionResponse response() {
         return new RegistrationSubmissionResponse(10L, "REG-EXAMPLE", RegistrationStatus.UNDER_REVIEW,
                 Instant.parse("2026-10-19T17:00:00Z"), List.of(DocumentType.RECOMMENDATION_LETTER), List.of());
+    }
+
+    @Test
+    void missingBlankOrNamelessPrincipalNeverReachesService() throws Exception {
+        mvc.perform(get("/api/registration-applications/10/approval-steps")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/10/approval-steps").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/10/approval-steps").principal(() -> null)).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
     }
 }

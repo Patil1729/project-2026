@@ -1,6 +1,7 @@
 package com.party.registration.admin.search.service;
 
 import com.party.common.dto.PageResponse;
+import com.party.administration.access.service.AreaAccessService;
 import com.party.registration.admin.common.service.AdminOrganizationScopeService;
 import com.party.registration.admin.search.dto.*;
 import com.party.registration.admin.search.repository.*;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminApplicationSearchServiceImpl implements AdminApplicationSearchService {
     private final AdminApplicationRepository repository;
     private final AdminOrganizationScopeService scopes;
+    private final AreaAccessService access;
 
     public PageResponse<AdminApplicationResponse> search(ApplicationSearchRequest request) {
         if (!request.isDateRangeValid()) throw new RegistrationException(HttpStatus.BAD_REQUEST,
@@ -30,8 +32,10 @@ public class AdminApplicationSearchServiceImpl implements AdminApplicationSearch
     }
 
     public AdminApplicationResponse getById(Long id) {
-        return toResponse(repository.findById(id).orElseThrow(() -> new RegistrationException(
-                HttpStatus.NOT_FOUND, "APPLICATION_NOT_FOUND", "Registration application " + id + " not found.")));
+        var application = repository.findById(id).orElseThrow(() -> new RegistrationException(
+                HttpStatus.NOT_FOUND, "APPLICATION_NOT_FOUND", "Registration application " + id + " not found."));
+        access.requireUnit(application.getSelectedShakha().getId());
+        return toResponse(application);
     }
 
     private AdminApplicationResponse toResponse(RegistrationApplication app) {

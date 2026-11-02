@@ -22,6 +22,7 @@ import com.party.user.entity.AppUser;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.party.administration.access.service.AreaAccessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -54,11 +55,12 @@ public class ApplicationDocumentReviewServiceImpl implements ApplicationDocument
     private final AdvocateAssignmentRepository assignmentRepository;
     private final ApprovalAuditLogRepository auditLogRepository;
     private final DocumentStorage documentStorage;
+    private final AreaAccessService access;
 
     @Override
     public List<ApplicationDocumentResponse> list(String username, Long applicationId) {
         AppUser reviewer = findEnabledReviewer(username);
-        requireReviewAccess(reviewer, findApplication(applicationId, false));
+        requireReadAccess(reviewer, findApplication(applicationId, false));
         return documentRepository.findAllByApplication_IdOrderByIdDesc(applicationId).stream()
                 .map(this::toResponse).toList();
     }
@@ -66,14 +68,14 @@ public class ApplicationDocumentReviewServiceImpl implements ApplicationDocument
     @Override
     public ApplicationDocumentResponse get(String username, Long applicationId, Long documentId) {
         AppUser reviewer = findEnabledReviewer(username);
-        requireReviewAccess(reviewer, findApplication(applicationId, false));
+        requireReadAccess(reviewer, findApplication(applicationId, false));
         return toResponse(findDocument(applicationId, documentId));
     }
 
     @Override
     public ApplicationDocumentDownload download(String username, Long applicationId, Long documentId) {
         AppUser reviewer = findEnabledReviewer(username);
-        requireReviewAccess(reviewer, findApplication(applicationId, false));
+        requireReadAccess(reviewer, findApplication(applicationId, false));
         ApplicationDocument document = findDocument(applicationId, documentId);
         try {
             InputStream input = documentStorage.open(document.getStorageKey());
@@ -161,6 +163,11 @@ public class ApplicationDocumentReviewServiceImpl implements ApplicationDocument
                 : applicationRepository.findById(applicationId))
                 .orElseThrow(() -> failure(HttpStatus.NOT_FOUND, "APPLICATION_NOT_FOUND",
                         "Registration application not found."));
+    }
+
+    private void requireReadAccess(AppUser reviewer, RegistrationApplication application) {
+        if (access.canAccessUnit(application.getSelectedShakha().getId())) return;
+        requireReviewAccess(reviewer, application);
     }
 
     private void requireReviewAccess(AppUser reviewer, RegistrationApplication application) {

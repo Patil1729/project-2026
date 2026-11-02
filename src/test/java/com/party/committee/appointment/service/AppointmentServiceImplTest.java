@@ -15,6 +15,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.party.administration.access.service.AreaAccessService;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.time.*;
 import java.util.*;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AppointmentServiceImplTest {
+    @Mock AreaAccessService access;
     @Mock AppointmentRepository appointments;
     @Mock AppointmentAuditLogRepository audits;
     @Mock UserRepository users;
@@ -39,7 +41,7 @@ class AppointmentServiceImplTest {
     Clock clock = Clock.fixed(Instant.parse("2026-10-24T09:00:00Z"), ZoneOffset.UTC);
 
     @BeforeEach void setup() {
-        service = new AppointmentServiceImpl(appointments, audits, users, roles, committees, positions, organizations, clock);
+        service = new AppointmentServiceImpl(appointments, access, audits, users, roles, committees, positions, organizations, clock);
         original = advocate(10L);
         var party = OrganizationUnit.builder().id(1L).name("Party").type(OrganizationType.PARTY).build();
         var state = OrganizationUnit.builder().id(2L).name("State").type(OrganizationType.STATE).parent(party).build();

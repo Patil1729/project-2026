@@ -4,13 +4,17 @@ import com.party.registration.admin.common.dto.OrganizationLink;
 import com.party.registration.admin.common.repository.OrganizationHierarchyRepository;
 import com.party.registration.common.exception.RegistrationException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import com.party.administration.access.service.AreaAccessService;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AdminOrganizationScopeServiceTest {
     final OrganizationHierarchyRepository repository = mock(OrganizationHierarchyRepository.class);
-    final AdminOrganizationScopeService service = new AdminOrganizationScopeService(repository);
+    final AreaAccessService access = mock(AreaAccessService.class);
+    final AdminOrganizationScopeService service = new AdminOrganizationScopeService(repository, access);
+    @BeforeEach void globalAdmin() { when(access.requireAdministrator()).thenReturn(new AreaAccessService.Snapshot(1L, true, List.of(), List.of(), List.of(), List.of())); }
 
     @Test void absentUnitMeansGlobalScope() {
         assertTrue(service.resolve(null, true).isGlobal());
