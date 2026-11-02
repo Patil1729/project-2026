@@ -1,0 +1,2 @@
+package com.party.help.entity;
+public enum HelpCategory { POLICE_FIR, ARREST_DETENTION, POLITICAL_HARASSMENT, WOMEN_SAFETY, PROPERTY_DISPUTE, OTHER }
