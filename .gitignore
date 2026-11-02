@@ -35,3 +35,7 @@ build/
 ### Private registration uploads ###
 /private-storage/
 /verification/classes/
+
+### front end ###
+/frontend/node_modules/
+/frontend/dist/
