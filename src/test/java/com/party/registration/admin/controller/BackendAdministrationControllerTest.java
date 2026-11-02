@@ -15,7 +15,6 @@ import com.party.registration.audit.controller.ApplicationAuditController;
 import com.party.registration.audit.service.ApplicationAuditService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.*;
 import java.util.*;
@@ -25,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class BackendAdministrationControllerTest {
-    @Test void searchReturnsStablePagingWithoutRequiringAnAuthenticationModule() throws Exception {
+    @Test void searchReturnsStablePagingForValidParameters() throws Exception {
         var service = mock(AdminApplicationSearchService.class);
         when(service.search(any())).thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
         var mvc = MockMvcBuilders.standaloneSetup(new AdminApplicationSearchController(service))
@@ -62,22 +61,23 @@ class BackendAdministrationControllerTest {
         verify(service, never()).end(anyLong(), any());
     }
 
-    @Test void applicantHistoryUsesTheExistingLocalProfileIdentity() throws Exception {
+    @Test void applicantHistoryUsesAuthenticatedPrincipal() throws Exception {
         var service = mock(ApplicationAuditService.class);
-        when(service.getMyHistory("local.applicant", 1L, 0, 20)).thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
-        var environment = new MockEnvironment().withProperty("app.registration.local-test-username", "local.applicant");
-        environment.setActiveProfiles("local");
-        var mvc = MockMvcBuilders.standaloneSetup(new ApplicationAuditController(service, environment))
+        when(service.getMyHistory("signed.in.applicant", 1L, 0, 20)).thenReturn(new PageResponse<>(List.of(), 0, 20, 0, 0, false));
+
+        var mvc = MockMvcBuilders.standaloneSetup(new ApplicationAuditController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
-        mvc.perform(get("/api/registration-applications/1/history")).andExpect(status().isOk());
-        verify(service).getMyHistory("local.applicant", 1L, 0, 20);
+        mvc.perform(get("/api/registration-applications/1/history").principal(() -> "signed.in.applicant")).andExpect(status().isOk());
+        verify(service).getMyHistory("signed.in.applicant", 1L, 0, 20);
     }
 
-    @Test void applicantHistoryWithoutAnIdentityReturns401OutsideLocal() throws Exception {
+    @Test void applicantHistoryWithoutAnIdentityReturns401() throws Exception {
         var service = mock(ApplicationAuditService.class);
-        var mvc = MockMvcBuilders.standaloneSetup(new ApplicationAuditController(service, new MockEnvironment()))
+        var mvc = MockMvcBuilders.standaloneSetup(new ApplicationAuditController(service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
         mvc.perform(get("/api/registration-applications/1/history")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/1/history").principal(() -> "  ")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/registration-applications/1/history").principal(() -> null)).andExpect(status().isUnauthorized());
         verifyNoInteractions(service);
     }
 }

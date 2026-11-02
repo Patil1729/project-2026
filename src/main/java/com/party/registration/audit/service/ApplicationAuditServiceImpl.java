@@ -1,6 +1,7 @@
 package com.party.registration.audit.service;
 
 import com.party.common.dto.PageResponse;
+import com.party.administration.access.service.AreaAccessService;
 import com.party.registration.application.repository.RegistrationApplicationRepository;
 import com.party.registration.audit.dto.ApplicationAuditResponse;
 import com.party.registration.audit.repository.ApprovalAuditLogRepository;
@@ -19,6 +20,7 @@ public class ApplicationAuditServiceImpl implements ApplicationAuditService {
     private final ApprovalAuditLogRepository audits;
     private final RegistrationApplicationRepository applications;
     private final RegistrationApplicantRepository users;
+    private final AreaAccessService access;
 
     public PageResponse<ApplicationAuditResponse> getMyHistory(String username, Long applicationId, int page, int size) {
         var user = users.findByUsername(username).orElseThrow(() -> new RegistrationException(
@@ -29,7 +31,8 @@ public class ApplicationAuditServiceImpl implements ApplicationAuditService {
     }
 
     public PageResponse<ApplicationAuditResponse> getAdminHistory(Long applicationId, int page, int size) {
-        if (!applications.existsById(applicationId)) throw notFound();
+        var application = applications.findById(applicationId).orElseThrow(this::notFound);
+        access.requireUnit(application.getSelectedShakha().getId());
         return history(applicationId, page, size);
     }
 

@@ -6,7 +6,6 @@ import com.party.registration.audit.service.ApplicationAuditService;
 import com.party.registration.common.exception.RegistrationException;
 import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
@@ -16,7 +15,6 @@ import java.security.Principal;
 @RequestMapping("/api/registration-applications/{applicationId}/history")
 public class ApplicationAuditController {
     private final ApplicationAuditService service;
-    private final Environment environment;
 
     @GetMapping
     public ResponseEntity<PageResponse<ApplicationAuditResponse>> history(Principal principal,
@@ -27,11 +25,10 @@ public class ApplicationAuditController {
     }
 
     private String username(Principal principal) {
-        if (principal != null && principal.getName() != null && !principal.getName().isBlank()) return principal.getName();
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String username = environment.getProperty("app.registration.local-test-username");
-            if (username != null && !username.isBlank()) return username.strip();
+        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+            throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
+                    "Sign in before accessing this resource.");
         }
-        throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", "An applicant identity is required to view history.");
+        return principal.getName();
     }
 }

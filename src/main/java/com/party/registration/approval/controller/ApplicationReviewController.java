@@ -11,8 +11,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,7 +30,6 @@ import java.security.Principal;
 @RequestMapping("/api/application-reviews")
 public class ApplicationReviewController {
     private final ApplicationReviewService reviewService;
-    private final Environment environment;
 
     @GetMapping("/pending")
     public ResponseEntity<ApplicationReviewInboxResponse> getPending(
@@ -80,15 +77,9 @@ public class ApplicationReviewController {
     }
 
     private String username(Principal principal) {
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String username = environment.getProperty("app.registration.local-reviewer-username");
-            if (username != null && !username.isBlank()) {
-                return username.strip();
-            }
-        }
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
-                    "A reviewer identity is required to review this application.");
+                    "Sign in before accessing this resource.");
         }
         return principal.getName();
     }

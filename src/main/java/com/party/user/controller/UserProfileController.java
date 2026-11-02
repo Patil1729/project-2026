@@ -15,6 +15,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/users/{userId}/profile")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD') or #userId == principal.id")
 public class UserProfileController {
 
     private final UserProfileService profileService;
@@ -29,6 +30,7 @@ public class UserProfileController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD') or #userId == principal.id or @areaAccess.canReadUser(#userId)")
     @GetMapping
     public ResponseEntity<UserProfileResponse> getProfile(
             @PathVariable("userId") @Positive Long userId) {

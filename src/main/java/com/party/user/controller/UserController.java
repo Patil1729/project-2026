@@ -21,6 +21,7 @@ public class UserController {
 
     private final UserService userService;
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD')")
     @PostMapping
     public ResponseEntity<UserResponse> createUser(
             @Valid @RequestBody UserRequest request) {
@@ -35,6 +36,7 @@ public class UserController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD')")
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable("userId")
@@ -47,6 +49,7 @@ public class UserController {
         );
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD')")
     @PatchMapping("/{userId}/deactivate")
     public ResponseEntity<UserResponse> deactivateUser(
             @PathVariable("userId")
@@ -58,6 +61,7 @@ public class UserController {
         );
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PARTY_HEAD') or #userId == principal.id or @areaAccess.canReadUser(#userId)")
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUserById(
             @PathVariable("userId")
@@ -69,6 +73,7 @@ public class UserController {
         );
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("@areaAccess.hasAdminAccess()")
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
 

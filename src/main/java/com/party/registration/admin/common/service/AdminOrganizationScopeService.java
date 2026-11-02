@@ -1,6 +1,8 @@
 package com.party.registration.admin.common.service;
 
 import com.party.registration.admin.common.dto.OrganizationLink;
+import com.party.administration.access.service.AreaAccessService;
+import com.party.administration.access.policy.AreaScopePolicy;
 import com.party.registration.admin.common.dto.OrganizationScope;
 import com.party.registration.admin.common.repository.OrganizationHierarchyRepository;
 import com.party.registration.common.exception.RegistrationException;
@@ -15,9 +17,18 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class AdminOrganizationScopeService {
     private final OrganizationHierarchyRepository repository;
+    private final AreaAccessService access;
 
     public OrganizationScope resolve(Long unitId, boolean includeDescendants) {
-        if (unitId == null) return new OrganizationScope(null, includeDescendants, List.of());
+        var authorized = access.requireAdministrator();
+        if (!authorized.global()) {
+            if (unitId == null) return new OrganizationScope(null, includeDescendants,
+                    includeDescendants ? authorized.unitIds() : authorized.roots(), false);
+            access.requireUnit(unitId);
+            return new OrganizationScope(unitId, includeDescendants,
+                    includeDescendants ? AreaScopePolicy.descendants(unitId, authorized.hierarchy()).stream().filter(authorized.unitIds()::contains).toList() : List.of(unitId), false);
+        }
+        if (unitId == null) return new OrganizationScope(null, includeDescendants, List.of(), true);
         if (unitId <= 0) throw new RegistrationException(HttpStatus.BAD_REQUEST,
                 "INVALID_ORGANIZATION_ID", "organizationUnitId must be positive.");
         if (!includeDescendants) {

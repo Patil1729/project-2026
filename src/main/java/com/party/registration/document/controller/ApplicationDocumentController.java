@@ -8,8 +8,6 @@ import com.party.registration.document.service.ApplicationDocumentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -35,7 +33,6 @@ import java.util.List;
 @RequestMapping("/api/registration-applications/{applicationId}/documents")
 public class ApplicationDocumentController {
     private final ApplicationDocumentService documentService;
-    private final Environment environment;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApplicationDocumentResponse> upload(
@@ -82,15 +79,9 @@ public class ApplicationDocumentController {
     }
 
     private String username(Principal principal) {
-        if (principal == null && environment.acceptsProfiles(Profiles.of("local"))) {
-            String localUsername = environment.getProperty("app.registration.local-test-username");
-            if (localUsername != null && !localUsername.isBlank()) {
-                return localUsername.strip();
-            }
-        }
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new RegistrationException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED",
-                    "Sign in before accessing registration documents.");
+                    "Sign in before accessing this resource.");
         }
         return principal.getName();
     }

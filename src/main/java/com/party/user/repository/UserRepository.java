@@ -2,6 +2,7 @@ package com.party.user.repository;
 
 import com.party.user.entity.AppUser;
 import jakarta.persistence.LockModeType;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -17,6 +18,9 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<AppUser, Long> {
 
+
+    @EntityGraph(attributePaths = {"roles", "organizationUnit"})
+    List<AppUser> findAllByOrganizationUnit_IdIn(java.util.Collection<Long> unitIds, Sort sort);
 
     boolean existsByUsername(String username);
 
@@ -37,4 +41,8 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from AppUser u where u.id = :id")
     Optional<AppUser> findByIdForUpdate(@Param("id") Long id);
+
+    Optional<AppUser> findByUsername(String username);
+
+    boolean existsByEmail(@Email @Size(max = 255) String email);
 }
